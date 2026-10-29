@@ -18,7 +18,8 @@ public class GamePanel extends JPanel {
 
     public GamePanel() {
         this.map = new GameMap();
-        this.player = new Player(GameMap.TILE_SIZE + 3, GameMap.TILE_SIZE + 3);
+        // Vị trí xuất phát của Player tại ô cỏ (1, 1)
+        this.player = new Player(GameMap.TILE_SIZE + 4, GameMap.TILE_SIZE + 4);
 
         setPreferredSize(new Dimension(map.getWidthInPixels(), map.getHeightInPixels()));
         setBackground(Color.BLACK);
@@ -27,7 +28,11 @@ public class GamePanel extends JPanel {
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                player.handleKeyPressed(e);
+                if (e.getKeyCode() == KeyEvent.VK_R) {
+                    player.reset(GameMap.TILE_SIZE + 4, GameMap.TILE_SIZE + 4);
+                } else {
+                    player.handleKeyPressed(e);
+                }
             }
 
             @Override
@@ -48,15 +53,18 @@ public class GamePanel extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
+        // 1. Vẽ bản đồ (cỏ, tường, gạch)
         map.draw(g);
+
+        // 2. Vẽ nhân vật Player
         player.draw(g);
 
-        g.setColor(new Color(40, 40, 40));
+        // 3. Thông tin hướng dẫn
+        g.setColor(new Color(255, 255, 255, 200));
         g.setFont(new Font("SansSerif", Font.BOLD, 12));
-        g.drawString("WASD / Phim mũi tên: Di chuyển", 12, 22);
+        g.drawString("WASD / Phím mũi tên: Di chuyển  |  R: Đặt lại", 12, 22);
     }
 
     public GameMap getMap() { return map; }
     public Player getPlayer() { return player; }
 }
-
