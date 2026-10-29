@@ -135,15 +135,6 @@ public class Menu {
             g2d.drawString(title, titleX, titleY);
         }
 
-        // Huy hiệu nhóm góc trên
-        g2d.setColor(new Color(15, 23, 42, 170));
-        g2d.fillRoundRect(width - 158, 8, 150, 24, 8, 8);
-        g2d.setColor(new Color(56, 189, 248));
-        g2d.drawRoundRect(width - 158, 8, 150, 24, 8, 8);
-        g2d.setFont(new Font("SansSerif", Font.BOLD, 11));
-        g2d.setColor(new Color(241, 245, 249));
-        g2d.drawString("★ OOP - UET VNU ★", width - 146, 24);
-
         // 2. VẼ CÁC NÚT BẤM (BUTTONS)
         for (int i = 0; i < menuOptions.length; i++) {
             Rectangle r = menuBounds[i];
