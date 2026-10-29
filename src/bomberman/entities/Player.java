@@ -165,6 +165,17 @@ public class Player {
         this.direction = Direction.DOWN;
     }
 
+    public void stopMoving() {
+        this.isMovingUp = false;
+        this.isMovingDown = false;
+        this.isMovingLeft = false;
+        this.isMovingRight = false;
+    }
+
+    public BufferedImage getSpriteDown() {
+        return spriteDown;
+    }
+
     public int getX() { return x; }
     public int getY() { return y; }
     public int getWidth() { return width; }
