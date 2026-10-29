@@ -1,5 +1,7 @@
 package bomberman.gui;
+
 import bomberman.entities.Player;
+
 import javax.swing.JPanel;
 import javax.swing.Timer;
 import java.awt.Color;
@@ -21,8 +23,8 @@ public class GamePanel extends JPanel {
 
     public GamePanel() {
         this.map = new GameMap();
-        // Vị trí xuất phát của Player tại ô cỏ (1, 1)
-        this.player = new Player(GameMap.TILE_SIZE + 4, GameMap.TILE_SIZE + 4);
+        this.player = new Player(0, 0);
+        this.player.reset(getPlayerSpawnX(), getPlayerSpawnY());
         this.menu = new Menu();
 
         setPreferredSize(new Dimension(map.getWidthInPixels(), map.getHeightInPixels()));
@@ -40,6 +42,14 @@ public class GamePanel extends JPanel {
             repaint();
         });
         gameTimer.start();
+    }
+
+    private int getPlayerSpawnX() {
+        return GameMap.TILE_SIZE + (GameMap.TILE_SIZE - player.getWidth()) / 2;
+    }
+
+    private int getPlayerSpawnY() {
+        return GameMap.TILE_SIZE + (GameMap.TILE_SIZE - player.getHeight()) / 2;
     }
 
     private void setupEventHandlers() {
@@ -60,7 +70,7 @@ public class GamePanel extends JPanel {
                             player.stopMoving();
                             setState(GameState.PAUSED);
                         } else if (e.getKeyCode() == KeyEvent.VK_R) {
-                            player.reset(GameMap.TILE_SIZE + 4, GameMap.TILE_SIZE + 4);
+                            player.reset(getPlayerSpawnX(), getPlayerSpawnY());
                         } else {
                             player.handleKeyPressed(e);
                         }
@@ -92,6 +102,7 @@ public class GamePanel extends JPanel {
             public void mouseMoved(MouseEvent e) {
                 int mx = e.getX();
                 int my = e.getY();
+                menu.updateBounds(getWidth(), getHeight());
                 switch (state) {
                     case MENU -> menu.handleMenuMouseMove(mx, my, GamePanel.this);
                     case HELP -> menu.handleHelpMouseMove(mx, my, GamePanel.this);
@@ -104,6 +115,7 @@ public class GamePanel extends JPanel {
             public void mousePressed(MouseEvent e) {
                 int mx = e.getX();
                 int my = e.getY();
+                menu.updateBounds(getWidth(), getHeight());
                 switch (state) {
                     case MENU -> menu.handleMenuMouseClick(mx, my, GamePanel.this);
                     case HELP -> menu.handleHelpMouseClick(mx, my, GamePanel.this);
@@ -146,7 +158,6 @@ public class GamePanel extends JPanel {
                 menu.drawPause(g, width, height);
             }
             case HELP -> {
-                map.draw(g);
                 menu.drawHelp(g, width, height);
             }
         }
@@ -154,18 +165,18 @@ public class GamePanel extends JPanel {
 
     private void drawHUD(Graphics g) {
         g.setColor(new Color(15, 23, 42, 200));
-        g.fillRoundRect(8, 6, 400, 26, 8, 8);
+        g.fillRoundRect(10, 8, 420, 28, 8, 8);
         g.setColor(new Color(56, 189, 248));
-        g.drawRoundRect(8, 6, 400, 26, 8, 8);
+        g.drawRoundRect(10, 8, 420, 28, 8, 8);
 
         g.setColor(new Color(241, 245, 249));
         g.setFont(new Font("SansSerif", Font.BOLD, 12));
-        g.drawString("WASD / Mũi tên: Di chuyển  |  R: Đặt lại  |  ESC: Tạm dừng", 16, 23);
+        g.drawString("WASD / Mũi tên: Di chuyển  |  R: Đặt lại  |  ESC: Tạm dừng", 20, 27);
     }
 
     // Các phương thức chuyển trạng thái Game
     public void startGame() {
-        player.reset(GameMap.TILE_SIZE + 4, GameMap.TILE_SIZE + 4);
+        player.reset(getPlayerSpawnX(), getPlayerSpawnY());
         this.state = GameState.PLAYING;
         setCursor(Cursor.getDefaultCursor());
     }
@@ -176,7 +187,7 @@ public class GamePanel extends JPanel {
     }
 
     public void restartGame() {
-        player.reset(GameMap.TILE_SIZE + 4, GameMap.TILE_SIZE + 4);
+        player.reset(getPlayerSpawnX(), getPlayerSpawnY());
         this.state = GameState.PLAYING;
         setCursor(Cursor.getDefaultCursor());
     }

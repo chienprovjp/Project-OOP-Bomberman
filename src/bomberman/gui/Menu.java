@@ -35,8 +35,8 @@ public class Menu {
     private BufferedImage playButtonImage;
 
     public Menu() {
-        initBounds();
         loadAssets();
+        updateBounds(GameMap.COLS * GameMap.TILE_SIZE, GameMap.ROWS * GameMap.TILE_SIZE);
     }
 
     private void loadAssets() {
@@ -71,31 +71,51 @@ public class Menu {
         }
     }
 
-    private void initBounds() {
-        int btnW = 190;
-        int playH = 50;
-        int subBtnH = 34;
-        int startX = (672 - btnW) / 2;
-        int startY = 210;
+    /**
+     * Tự động tính toán vị trí nút responsive theo kích thước màn hình:
+     * Dồn các nút sang phía dưới bên trái (dưới logo BOMBERMAN và quả bom),
+     * hoàn toàn không che nhân vật Bomberman trắng ở bên phải.
+     */
+    public void updateBounds(int width, int height) {
+        if (width <= 0) width = GameMap.COLS * GameMap.TILE_SIZE;
+        if (height <= 0) height = GameMap.ROWS * GameMap.TILE_SIZE;
 
-        menuBounds = new Rectangle[menuOptions.length];
-        // Nút 0: PLAY (sử dụng ảnh Play.png của Quốc)
+        // Kích thước nút tương xứng kích thước màn hình
+        int btnW = (int) (width * 0.23);
+        if (btnW < 180) btnW = 180;
+        if (btnW > 240) btnW = 240;
+
+        // Giữ đúng tỷ lệ ảnh nút Play.png của Quốc (940x265)
+        int playH = (int) (btnW * (265.0 / 940.0));
+        int subBtnH = Math.max(34, (int) (btnW * 0.17));
+
+        // Vị trí: Đặt bên trái, dưới logo BOMBERMAN và quả bom
+        int startX = (int) (width * 0.08); // Cách lề trái 8%
+        int startY = (int) (height * 0.44); // Bắt đầu ở 44% chiều cao (dưới chữ BOMBERMAN)
+
+        if (menuBounds == null || menuBounds.length != menuOptions.length) {
+            menuBounds = new Rectangle[menuOptions.length];
+        }
+        // Nút 0: PLAY (ảnh Play.png)
         menuBounds[0] = new Rectangle(startX, startY, btnW, playH);
         // Nút 1: HƯỚNG DẪN
         menuBounds[1] = new Rectangle(startX, startY + playH + 12, btnW, subBtnH);
         // Nút 2: THOÁT
         menuBounds[2] = new Rectangle(startX, startY + playH + 12 + subBtnH + 10, btnW, subBtnH);
 
-        // Nút quay lại của Help
-        helpBackBounds = new Rectangle((672 - 180) / 2, 335, 180, 36);
+        // Nút quay lại của Help (căn giữa phía dưới)
+        int helpBtnW = Math.max(180, (int) (width * 0.2));
+        helpBackBounds = new Rectangle((width - helpBtnW) / 2, height - 70, helpBtnW, 38);
 
-        // Nút trong Pause Menu
-        int pauseBtnW = 180;
-        int pauseBtnH = 36;
-        int pauseStartX = (672 - pauseBtnW) / 2;
-        int pauseStartY = 165;
+        // Nút trong Pause Menu (căn giữa)
+        int pauseBtnW = Math.max(190, (int) (width * 0.22));
+        int pauseBtnH = 38;
+        int pauseStartX = (width - pauseBtnW) / 2;
         int pauseSpacing = 48;
-        pauseBounds = new Rectangle[pauseOptions.length];
+        int pauseStartY = (height - (pauseOptions.length * pauseSpacing)) / 2 + 25;
+        if (pauseBounds == null || pauseBounds.length != pauseOptions.length) {
+            pauseBounds = new Rectangle[pauseOptions.length];
+        }
         for (int i = 0; i < pauseOptions.length; i++) {
             pauseBounds[i] = new Rectangle(pauseStartX, pauseStartY + i * pauseSpacing, pauseBtnW, pauseBtnH);
         }
@@ -109,19 +129,19 @@ public class Menu {
     // 1. VẼ MÀN HÌNH CHÍNH (MAIN MENU)
     // ==========================================
     public void drawMenu(Graphics g, int width, int height) {
+        updateBounds(width, height);
+
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        // 1. VẼ HÌNH NỀN: Ưu tiên dùng Background.png của Quốc
+        // 1. VẼ HÌNH NỀN: Dùng Background.png của Quốc
         if (backgroundImage != null) {
             g2d.drawImage(backgroundImage, 0, 0, width, height, null);
         } else {
-            // Nền tối dự phòng nếu thiếu ảnh
             g2d.setColor(new Color(15, 23, 42, 220));
             g2d.fillRect(0, 0, width, height);
 
-            // Tiêu đề dự phòng
             int floatOffset = (int) (Math.sin(animTick * 0.08) * 3);
             int titleY = 75 + floatOffset;
             String title = "BOMBERMAN";
@@ -135,7 +155,7 @@ public class Menu {
             g2d.drawString(title, titleX, titleY);
         }
 
-        // 2. VẼ CÁC NÚT BẤM (BUTTONS)
+        // 2. VẼ CÁC NÚT BẤM (BUTTONS) - NẰM BÊN TRÁI DƯỚI QUẢ BOM
         for (int i = 0; i < menuOptions.length; i++) {
             Rectangle r = menuBounds[i];
             boolean isCurrent = (i == selectedIndex);
@@ -150,12 +170,12 @@ public class Menu {
 
                     g2d.setColor(new Color(255, 215, 0));
                     g2d.setFont(new Font("SansSerif", Font.BOLD, 18));
-                    g2d.drawString("▶", r.x - 22, r.y + (r.height / 2) + 6);
+                    g2d.drawString("▶", r.x - 24, r.y + (r.height / 2) + 6);
                 }
                 g2d.drawImage(playButtonImage, r.x, r.y, r.width, r.height, null);
             } else {
                 // Các nút phụ: "HƯỚNG DẪN", "THOÁT GAME"
-                Font btnFont = new Font("SansSerif", Font.BOLD, 13);
+                Font btnFont = new Font("SansSerif", Font.BOLD, Math.max(13, r.height / 3));
                 g2d.setFont(btnFont);
                 FontMetrics bfm = g2d.getFontMetrics();
 
@@ -174,7 +194,7 @@ public class Menu {
 
                     // Mũi tên chỉ thị
                     g2d.setColor(new Color(254, 240, 138));
-                    g2d.drawString("▶", r.x - 20, r.y + ((r.height - bfm.getHeight()) / 2) + bfm.getAscent());
+                    g2d.drawString("▶", r.x - 22, r.y + ((r.height - bfm.getHeight()) / 2) + bfm.getAscent());
                 } else {
                     g2d.setColor(new Color(15, 23, 42, 200));
                     g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
@@ -209,6 +229,8 @@ public class Menu {
     // 2. VẼ MÀN HÌNH HƯỚNG DẪN (HELP SCREEN)
     // ==========================================
     public void drawHelp(Graphics g, int width, int height) {
+        updateBounds(width, height);
+
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -221,10 +243,10 @@ public class Menu {
         g2d.fillRect(0, 0, width, height);
 
         // Khung card trung tâm
-        int cardW = 540;
-        int cardH = 340;
+        int cardW = Math.min(620, width - 60);
+        int cardH = Math.min(400, height - 90);
         int cardX = (width - cardW) / 2;
-        int cardY = (height - cardH) / 2 - 10;
+        int cardY = (height - cardH) / 2 - 15;
 
         g2d.setColor(new Color(30, 41, 59, 245));
         g2d.fillRoundRect(cardX, cardY, cardW, cardH, 16, 16);
@@ -247,7 +269,7 @@ public class Menu {
             { "Mục tiêu", "Khám phá bản đồ, vượt chướng ngại vật & tránh quái vật" }
         };
 
-        int rowY = cardY + 75;
+        int rowY = cardY + 80;
         for (String[] row : instructions) {
             g2d.setFont(new Font("SansSerif", Font.BOLD, 12));
             g2d.setColor(new Color(51, 65, 85));
@@ -261,7 +283,7 @@ public class Menu {
             g2d.setColor(new Color(241, 245, 249));
             g2d.drawString(row[1], cardX + 216, rowY + 3);
 
-            rowY += 40;
+            rowY += 42;
         }
 
         // Nút QUAY LẠI
@@ -290,17 +312,17 @@ public class Menu {
     // 3. VẼ MÀN HÌNH TẠM DỪNG (PAUSE OVERLAY)
     // ==========================================
     public void drawPause(Graphics g, int width, int height) {
+        updateBounds(width, height);
+
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        // Lớp tối phủ mờ sàn game đang chơi
         g2d.setColor(new Color(0, 0, 0, 190));
         g2d.fillRect(0, 0, width, height);
 
-        // Khung card tạm dừng
-        int cardW = 300;
-        int cardH = 220;
+        int cardW = Math.min(340, width - 60);
+        int cardH = Math.min(250, height - 80);
         int cardX = (width - cardW) / 2;
         int cardY = (height - cardH) / 2;
 
@@ -310,14 +332,12 @@ public class Menu {
         g2d.setStroke(new BasicStroke(2));
         g2d.drawRoundRect(cardX, cardY, cardW, cardH, 14, 14);
 
-        // Tiêu đề TẠM DỪNG
         g2d.setFont(new Font("SansSerif", Font.BOLD, 22));
         FontMetrics tfm = g2d.getFontMetrics();
         String pauseTitle = "TẠM DỪNG";
         g2d.setColor(new Color(255, 215, 0));
         g2d.drawString(pauseTitle, cardX + (cardW - tfm.stringWidth(pauseTitle)) / 2, cardY + 36);
 
-        // Các nút trong bảng Tạm dừng
         Font btnFont = new Font("SansSerif", Font.BOLD, 13);
         g2d.setFont(btnFont);
         FontMetrics bfm = g2d.getFontMetrics();
@@ -392,12 +412,12 @@ public class Menu {
     }
 
     public void handleHelpMouseMove(int mx, int my, GamePanel panel) {
-        isHelpBackHovered = helpBackBounds.contains(mx, my);
+        isHelpBackHovered = helpBackBounds != null && helpBackBounds.contains(mx, my);
         panel.setCursor(isHelpBackHovered ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
     }
 
     public void handleHelpMouseClick(int mx, int my, GamePanel panel) {
-        if (helpBackBounds.contains(mx, my)) {
+        if (helpBackBounds != null && helpBackBounds.contains(mx, my)) {
             panel.setCursor(Cursor.getDefaultCursor());
             panel.setState(GameState.MENU);
         }

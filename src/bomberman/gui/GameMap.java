@@ -7,7 +7,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 
 public class GameMap {
-    public static final int TILE_SIZE = 32;
+    // Kích thước ô tile chuẩn: 48px giúp game hiển thị to rõ, đẹp mắt trên mọi màn hình
+    public static final int TILE_SIZE = 48;
     public static final int COLS = 21;
     public static final int ROWS = 13;
 

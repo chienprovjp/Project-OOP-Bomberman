@@ -12,9 +12,10 @@ import java.io.File;
 public class Player {
     private int x;
     private int y;
-    private int width = 24;
-    private int height = 24;
-    private int speed = 3;
+    // Tự động căn chỉnh kích thước hitbox theo TILE_SIZE (khoảng 72% ô)
+    private int width = (int) (GameMap.TILE_SIZE * 0.72);
+    private int height = (int) (GameMap.TILE_SIZE * 0.72);
+    private int speed = Math.max(3, GameMap.TILE_SIZE / 12);
 
     private boolean isMovingUp = false;
     private boolean isMovingDown = false;
