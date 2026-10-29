@@ -12,7 +12,10 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 /**
- * Màn hình game chính: chứa GameMap và Player.
+ * Lớp GamePanel: Màn hình vẽ chính của game.
+ * - Quản lý bản đồ (GameMap) và nhân vật (Player).
+ * - Lắng nghe bàn phím người dùng.
+ * - Chạy vòng lặp game (Game Loop) bằng Timer để cập nhật và vẽ liên tục ~60 lần mỗi giây.
  */
 public class GamePanel extends JPanel {
     private GameMap map;
@@ -20,56 +23,64 @@ public class GamePanel extends JPanel {
     private Timer gameTimer;
 
     public GamePanel() {
+        // 1. Tạo bản đồ game
         this.map = new GameMap();
-        // Khởi tạo Player ở vị trí an toàn (ô x=1, y=1)
-        this.player = new Player(GameMap.TILE_SIZE + 3, GameMap.TILE_SIZE + 3);
 
-        setPreferredSize(new Dimension(map.getWidth(), map.getHeight()));
+        // 2. Tạo nhân vật ở vị trí ban đầu (ô hàng 1, cột 1 - vị trí trống an toàn)
+        int startX = GameMap.TILE_SIZE + 3;
+        int startY = GameMap.TILE_SIZE + 3;
+        this.player = new Player(startX, startY);
+
+        // 3. Cài đặt kích thước màn hình khớp với kích thước của bản đồ
+        setPreferredSize(new Dimension(map.getWidthInPixels(), map.getHeightInPixels()));
         setBackground(Color.BLACK);
-        setFocusable(true);
+        setFocusable(true); // Cho phép panel nhận sự kiện bàn phím
 
-        // Bắt sự kiện bàn phím chuyển đến Player
+        // 4. Lắng nghe phím bấm từ người chơi và gửi cho nhân vật xử lý
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                player.keyPressed(e);
+                player.handleKeyPressed(e);
             }
 
             @Override
             public void keyReleased(KeyEvent e) {
-                player.keyReleased(e);
+                player.handleKeyReleased(e);
             }
         });
 
-        // Game loop: ~60 FPS (16ms một lần cập nhật)
+        // 5. Khởi tạo vòng lặp game (Game Loop):
+        // Cứ sau mỗi 16 mili-giây (tương đương ~60 khung hình/giây - FPS):
+        // - Cập nhật vị trí nhân vật (player.move)
+        // - Yêu cầu máy vẽ lại toàn bộ màn hình (repaint)
         gameTimer = new Timer(16, e -> {
-            player.update(map);
+            player.move(map);
             repaint();
         });
-        gameTimer.start();
+        gameTimer.start(); // Bắt đầu chạy vòng lặp game
     }
 
+    /**
+     * Hàm vẽ toàn bộ nội dung game lên màn hình.
+     * Thứ tự vẽ rất quan trọng: Cái nào vẽ trước sẽ ở dưới, cái nào vẽ sau sẽ đè lên trên.
+     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        // 1. Vẽ map
-        map.render(g);
+        // Bước 1: Vẽ bản đồ làm nền phía dưới
+        map.draw(g);
 
-        // 2. Vẽ nhân vật
-        player.render(g);
+        // Bước 2: Vẽ nhân vật đè lên trên nền bản đồ
+        player.draw(g);
 
-        // 3. Hướng dẫn sơ bộ góc trên
+        // Bước 3: Vẽ dòng chữ hướng dẫn điều khiển ở góc trên màn hình
         g.setColor(new Color(40, 40, 40));
         g.setFont(new Font("SansSerif", Font.BOLD, 12));
-        g.drawString("WASD / Phím mũi tên: Di chuyển", 12, 22);
+        g.drawString("Dieu khien: Phim WASD hoac Phim mui ten", 12, 22);
     }
 
-    public GameMap getMap() {
-        return map;
-    }
-
-    public Player getPlayer() {
-        return player;
-    }
+    public GameMap getMap() { return map; }
+    public Player getPlayer() { return player; }
 }
+
