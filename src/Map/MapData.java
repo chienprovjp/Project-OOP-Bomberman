@@ -37,6 +37,7 @@ public class MapData {
         return row >= 0 && row < ROWS
             && col >= 0 && col < COLS;
     }
+
     public static boolean isWalkable(int row, int col) {
         return isInsideMap(row, col)
             && map[row][col] == GRASS;

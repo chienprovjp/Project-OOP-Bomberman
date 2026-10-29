@@ -1,5 +1,7 @@
 package src.Map;
 
+import java.net.URL;
+
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
@@ -9,7 +11,6 @@ public class GameMap extends Canvas {
     public static final int TILE_SIZE = 32;
 
     private final GraphicsContext gc;
-
     private final Image grassImage;
     private final Image wallImage;
     private final Image brickImage;
@@ -31,7 +32,7 @@ public class GameMap extends Canvas {
     }
 
     private Image loadImage(String path) {
-        var url = getClass().getResource(path);
+        URL url = getClass().getResource(path);
 
         if (url == null) {
             throw new IllegalArgumentException(
@@ -39,7 +40,16 @@ public class GameMap extends Canvas {
             );
         }
 
-        return new Image(url.toExternalForm());
+        Image image = new Image(url.toExternalForm());
+
+        if (image.isError()) {
+            throw new IllegalArgumentException(
+                "Khong the doc hinh anh: " + path,
+                image.getException()
+            );
+        }
+
+        return image;
     }
 
     public void drawMap() {
@@ -48,7 +58,6 @@ public class GameMap extends Canvas {
         for (int row = 0; row < MapData.ROWS; row++) {
             for (int col = 0; col < MapData.COLS; col++) {
                 int tile = MapData.getTile(row, col);
-
                 Image image;
 
                 if (tile == MapData.GRASS) {
