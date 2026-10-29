@@ -1,7 +1,5 @@
 package bomberman.gui;
-
 import bomberman.entities.Player;
-
 import javax.swing.JPanel;
 import javax.swing.Timer;
 import java.awt.Color;
@@ -128,9 +126,10 @@ public class GamePanel extends JPanel {
 
         switch (state) {
             case MENU -> {
-                // 1. Vẽ map nền tĩnh phía sau
-                map.draw(g);
-                // 2. Vẽ Menu giao diện chính
+                // Ưu tiên dùng Background.png của Quốc do menu vẽ; chỉ vẽ map nếu không có ảnh nền
+                if (menu.getBackgroundImage() == null) {
+                    map.draw(g);
+                }
                 menu.drawMenu(g, width, height);
             }
             case PLAYING -> {

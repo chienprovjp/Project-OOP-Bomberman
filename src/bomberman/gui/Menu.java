@@ -31,13 +31,36 @@ public class Menu {
 
     private int animTick = 0;
     private BufferedImage playerIcon;
+    private BufferedImage backgroundImage;
+    private BufferedImage playButtonImage;
 
     public Menu() {
         initBounds();
-        loadIcon();
+        loadAssets();
     }
 
-    private void loadIcon() {
+    private void loadAssets() {
+        // Nạp ảnh nền Background.png từ nhánh feature/map-ui của Quốc
+        try {
+            File bgFile = new File("assets/Background.png");
+            if (!bgFile.exists()) bgFile = new File("assets/background.png");
+            if (bgFile.exists()) {
+                backgroundImage = ImageIO.read(bgFile);
+            }
+        } catch (Exception ignored) {
+        }
+
+        // Nạp ảnh nút Play.png
+        try {
+            File playFile = new File("assets/Buttons/Play.png");
+            if (!playFile.exists()) playFile = new File("assets/Buttons/play.png");
+            if (playFile.exists()) {
+                playButtonImage = ImageIO.read(playFile);
+            }
+        } catch (Exception ignored) {
+        }
+
+        // Nạp icon player trang trí
         try {
             File f = new File("assets/images/player_down.png");
             if (!f.exists()) f = new File("assets/images/player.png");
@@ -49,16 +72,19 @@ public class Menu {
     }
 
     private void initBounds() {
-        int btnW = 220;
-        int btnH = 40;
+        int btnW = 190;
+        int playH = 50;
+        int subBtnH = 34;
         int startX = (672 - btnW) / 2;
-        int startY = 165;
-        int spacing = 52;
+        int startY = 210;
 
         menuBounds = new Rectangle[menuOptions.length];
-        for (int i = 0; i < menuOptions.length; i++) {
-            menuBounds[i] = new Rectangle(startX, startY + i * spacing, btnW, btnH);
-        }
+        // Nút 0: PLAY (sử dụng ảnh Play.png của Quốc)
+        menuBounds[0] = new Rectangle(startX, startY, btnW, playH);
+        // Nút 1: HƯỚNG DẪN
+        menuBounds[1] = new Rectangle(startX, startY + playH + 12, btnW, subBtnH);
+        // Nút 2: THOÁT
+        menuBounds[2] = new Rectangle(startX, startY + playH + 12 + subBtnH + 10, btnW, subBtnH);
 
         // Nút quay lại của Help
         helpBackBounds = new Rectangle((672 - 180) / 2, 335, 180, 36);
@@ -87,97 +113,105 @@ public class Menu {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        // Lớp phủ nền mờ phong cách Dark Arcade
-        g2d.setColor(new Color(15, 23, 42, 220));
-        g2d.fillRect(0, 0, width, height);
+        // 1. VẼ HÌNH NỀN: Ưu tiên dùng Background.png của Quốc
+        if (backgroundImage != null) {
+            g2d.drawImage(backgroundImage, 0, 0, width, height, null);
+        } else {
+            // Nền tối dự phòng nếu thiếu ảnh
+            g2d.setColor(new Color(15, 23, 42, 220));
+            g2d.fillRect(0, 0, width, height);
 
-        // Hiệu ứng nhịp nhẹ cho Tiêu đề
-        int floatOffset = (int) (Math.sin(animTick * 0.08) * 3);
+            // Tiêu đề dự phòng
+            int floatOffset = (int) (Math.sin(animTick * 0.08) * 3);
+            int titleY = 75 + floatOffset;
+            String title = "BOMBERMAN";
+            g2d.setFont(new Font("SansSerif", Font.BOLD, 42));
+            FontMetrics tfm = g2d.getFontMetrics();
+            int titleX = (width - tfm.stringWidth(title)) / 2;
 
-        // Tiêu đề BOMBERMAN
-        int titleY = 75 + floatOffset;
-        String title = "BOMBERMAN";
-        Font titleFont = new Font("SansSerif", Font.BOLD, 42);
-        g2d.setFont(titleFont);
-        FontMetrics tfm = g2d.getFontMetrics();
-        int titleX = (width - tfm.stringWidth(title)) / 2;
-
-        // Bóng đổ tiêu đề (3D drop shadow)
-        g2d.setColor(new Color(0, 0, 0, 180));
-        g2d.drawString(title, titleX + 3, titleY + 3);
-
-        // Viền đỏ cam và chữ vàng nổi bật
-        g2d.setColor(new Color(255, 107, 0));
-        g2d.drawString(title, titleX - 1, titleY - 1);
-        g2d.drawString(title, titleX + 1, titleY + 1);
-        g2d.setColor(new Color(255, 215, 0));
-        g2d.drawString(title, titleX, titleY);
-
-        // Huy hiệu phụ đề (Badge)
-        String sub = "★ OOP PROJECT - UET VNU ★";
-        Font subFont = new Font("SansSerif", Font.BOLD, 12);
-        g2d.setFont(subFont);
-        FontMetrics sfm = g2d.getFontMetrics();
-        int subX = (width - sfm.stringWidth(sub)) / 2;
-        int subY = titleY + 28;
-
-        g2d.setColor(new Color(30, 41, 59, 180));
-        g2d.fillRoundRect(subX - 12, subY - 14, sfm.stringWidth(sub) + 24, 20, 10, 10);
-        g2d.setColor(new Color(56, 189, 248));
-        g2d.drawRoundRect(subX - 12, subY - 14, sfm.stringWidth(sub) + 24, 20, 10, 10);
-        g2d.setColor(new Color(224, 242, 254));
-        g2d.drawString(sub, subX, subY);
-
-        // Vẽ icon player trang trí hai bên tiêu đề nếu có
-        if (playerIcon != null) {
-            int iconSize = 36;
-            g2d.drawImage(playerIcon, titleX - iconSize - 18, titleY - 32, iconSize, iconSize, null);
-            g2d.drawImage(playerIcon, titleX + tfm.stringWidth(title) + 18, titleY - 32, iconSize, iconSize, null);
+            g2d.setColor(new Color(0, 0, 0, 180));
+            g2d.drawString(title, titleX + 3, titleY + 3);
+            g2d.setColor(new Color(255, 215, 0));
+            g2d.drawString(title, titleX, titleY);
         }
 
-        // Vẽ các nút Menu
-        Font btnFont = new Font("SansSerif", Font.BOLD, 15);
-        g2d.setFont(btnFont);
-        FontMetrics bfm = g2d.getFontMetrics();
+        // Huy hiệu nhóm góc trên
+        g2d.setColor(new Color(15, 23, 42, 170));
+        g2d.fillRoundRect(width - 158, 8, 150, 24, 8, 8);
+        g2d.setColor(new Color(56, 189, 248));
+        g2d.drawRoundRect(width - 158, 8, 150, 24, 8, 8);
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 11));
+        g2d.setColor(new Color(241, 245, 249));
+        g2d.drawString("★ OOP - UET VNU ★", width - 146, 24);
 
+        // 2. VẼ CÁC NÚT BẤM (BUTTONS)
         for (int i = 0; i < menuOptions.length; i++) {
             Rectangle r = menuBounds[i];
             boolean isCurrent = (i == selectedIndex);
 
-            // Nền nút
-            if (isCurrent) {
-                g2d.setColor(new Color(37, 99, 235, 230)); // Xanh dương sáng khi hover / chọn
-                g2d.fillRoundRect(r.x, r.y, r.width, r.height, 12, 12);
-                g2d.setColor(new Color(96, 165, 250));
-                g2d.setStroke(new BasicStroke(2));
-                g2d.drawRoundRect(r.x, r.y, r.width, r.height, 12, 12);
+            if (i == 0 && playButtonImage != null) {
+                // Nút PLAY dùng ảnh Play.png của Quốc
+                if (isCurrent) {
+                    // Viền vàng phát sáng & con trỏ chỉ thị khi đang chọn hoặc rê chuột
+                    g2d.setColor(new Color(255, 215, 0));
+                    g2d.setStroke(new BasicStroke(3));
+                    g2d.drawRoundRect(r.x - 3, r.y - 3, r.width + 6, r.height + 6, 12, 12);
 
-                // Mũi tên chỉ thị bên trái
-                g2d.setColor(new Color(254, 240, 138));
-                g2d.drawString("▶", r.x + 14, r.y + ((r.height - bfm.getHeight()) / 2) + bfm.getAscent());
+                    g2d.setColor(new Color(255, 215, 0));
+                    g2d.setFont(new Font("SansSerif", Font.BOLD, 18));
+                    g2d.drawString("▶", r.x - 22, r.y + (r.height / 2) + 6);
+                }
+                g2d.drawImage(playButtonImage, r.x, r.y, r.width, r.height, null);
             } else {
-                g2d.setColor(new Color(30, 41, 59, 180)); // Xám mờ tinh tế
-                g2d.fillRoundRect(r.x, r.y, r.width, r.height, 12, 12);
-                g2d.setColor(new Color(71, 85, 105));
-                g2d.setStroke(new BasicStroke(1));
-                g2d.drawRoundRect(r.x, r.y, r.width, r.height, 12, 12);
+                // Các nút phụ: "HƯỚNG DẪN", "THOÁT GAME"
+                Font btnFont = new Font("SansSerif", Font.BOLD, 13);
+                g2d.setFont(btnFont);
+                FontMetrics bfm = g2d.getFontMetrics();
+
+                if (isCurrent) {
+                    if (i == 2) {
+                        g2d.setColor(new Color(220, 38, 38, 230)); // Đỏ cảnh báo cho nút Thoát
+                        g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+                        g2d.setColor(new Color(252, 165, 165));
+                    } else {
+                        g2d.setColor(new Color(37, 99, 235, 230)); // Xanh dương cho nút Hướng dẫn
+                        g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+                        g2d.setColor(new Color(147, 197, 253));
+                    }
+                    g2d.setStroke(new BasicStroke(2));
+                    g2d.drawRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+
+                    // Mũi tên chỉ thị
+                    g2d.setColor(new Color(254, 240, 138));
+                    g2d.drawString("▶", r.x - 20, r.y + ((r.height - bfm.getHeight()) / 2) + bfm.getAscent());
+                } else {
+                    g2d.setColor(new Color(15, 23, 42, 200));
+                    g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+                    g2d.setColor(new Color(71, 85, 105, 180));
+                    g2d.setStroke(new BasicStroke(1));
+                    g2d.drawRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+                }
+
+                String text = menuOptions[i];
+                int tx = r.x + (r.width - bfm.stringWidth(text)) / 2;
+                int ty = r.y + ((r.height - bfm.getHeight()) / 2) + bfm.getAscent();
+
+                g2d.setColor(isCurrent ? Color.WHITE : new Color(203, 213, 225));
+                g2d.drawString(text, tx, ty);
             }
-
-            // Chữ trong nút
-            String text = menuOptions[i];
-            int tx = r.x + (r.width - bfm.stringWidth(text)) / 2;
-            int ty = r.y + ((r.height - bfm.getHeight()) / 2) + bfm.getAscent();
-
-            g2d.setColor(isCurrent ? Color.WHITE : new Color(203, 213, 225));
-            g2d.drawString(text, tx, ty);
         }
 
-        // Footer hướng dẫn
+        // 3. THANH HƯỚNG DẪN DƯỚI CÙNG (FOOTER)
+        String footer = "[ ↑ / ↓ ]: Di chuyển  |  [ ENTER / SPACE ]: Chọn  |  Nhấp chuột vào nút để chơi";
         g2d.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        g2d.setColor(new Color(148, 163, 184));
-        String footer = "[ ↑ / ↓ ]: Chọn  |  [ ENTER / SPACE ]: Xác nhận  |  Hỗ trợ nhấp Chuột";
         FontMetrics ffm = g2d.getFontMetrics();
-        g2d.drawString(footer, (width - ffm.stringWidth(footer)) / 2, height - 20);
+        int fw = ffm.stringWidth(footer);
+        int fx = (width - fw) / 2;
+
+        g2d.setColor(new Color(15, 23, 42, 210));
+        g2d.fillRoundRect(fx - 14, height - 28, fw + 28, 22, 8, 8);
+        g2d.setColor(new Color(203, 213, 225));
+        g2d.drawString(footer, fx, height - 13);
     }
 
     // ==========================================
@@ -188,7 +222,10 @@ public class Menu {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        // Nền tối mờ
+        // Nền ảnh phủ tối
+        if (backgroundImage != null) {
+            g2d.drawImage(backgroundImage, 0, 0, width, height, null);
+        }
         g2d.setColor(new Color(15, 23, 42, 235));
         g2d.fillRect(0, 0, width, height);
 
@@ -198,7 +235,7 @@ public class Menu {
         int cardX = (width - cardW) / 2;
         int cardY = (height - cardH) / 2 - 10;
 
-        g2d.setColor(new Color(30, 41, 59, 240));
+        g2d.setColor(new Color(30, 41, 59, 245));
         g2d.fillRoundRect(cardX, cardY, cardW, cardH, 16, 16);
         g2d.setColor(new Color(56, 189, 248));
         g2d.setStroke(new BasicStroke(2));
@@ -221,7 +258,6 @@ public class Menu {
 
         int rowY = cardY + 75;
         for (String[] row : instructions) {
-            // Hộp phím bên trái
             g2d.setFont(new Font("SansSerif", Font.BOLD, 12));
             g2d.setColor(new Color(51, 65, 85));
             g2d.fillRoundRect(cardX + 24, rowY - 14, 180, 26, 6, 6);
@@ -230,7 +266,6 @@ public class Menu {
             g2d.setColor(new Color(254, 240, 138));
             g2d.drawString(row[0], cardX + 32, rowY + 3);
 
-            // Nội dung giải thích bên phải
             g2d.setFont(new Font("SansSerif", Font.PLAIN, 13));
             g2d.setColor(new Color(241, 245, 249));
             g2d.drawString(row[1], cardX + 216, rowY + 3);
@@ -401,5 +436,13 @@ public class Menu {
                 return;
             }
         }
+    }
+
+    public BufferedImage getBackgroundImage() {
+        return backgroundImage;
+    }
+
+    public BufferedImage getPlayButtonImage() {
+        return playButtonImage;
     }
 }
