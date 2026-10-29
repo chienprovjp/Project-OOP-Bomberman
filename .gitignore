@@ -1,8 +1,20 @@
-﻿.idea/
-out/
-target/
-bin/
-*.iml
+# Compiled Java files
 *.class
+
+# Build output
+/bin/
+/out/
+/target/
+/lib/
+
+# Logs
+*.log
+
+# IDE metadata
+/.idea/
+/.vscode/
+*.iml
+
+# Operating system files
 .DS_Store
-.vscode/
+Thumbs.db
