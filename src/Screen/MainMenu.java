@@ -17,7 +17,9 @@ public class MainMenu extends Screen {
     private MainMenu() {
         super();
         this.root.setPrefSize(1280, 720);
-        Image background = new Image(new File("assets/background.png").toURI().toString());
+        File bgFile = new File("assets/Background.png");
+        if (!bgFile.exists()) bgFile = new File("assets/background.png");
+        Image background = new Image(bgFile.toURI().toString());
         backgroundImageView = new ImageView(background);
         backgroundImageView.setFitWidth(1280);
         backgroundImageView.setFitHeight(720);
