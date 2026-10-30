@@ -13,6 +13,8 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import bomberman.data.SaveManager;
+import bomberman.data.GameSaveData;
 
 public class GamePanel extends JPanel {
     private GameMap map;
@@ -20,12 +22,22 @@ public class GamePanel extends JPanel {
     private Menu menu;
     private GameState state = GameState.MENU;
     private Timer gameTimer;
+    private int level = 1;
+    private int score = 0;
+    private int lives = 3;
+    private int highScore = 0;
 
     public GamePanel() {
         this.map = new GameMap();
         this.player = new Player(0, 0);
         this.player.reset(getPlayerSpawnX(), getPlayerSpawnY());
         this.menu = new Menu();
+        // Đọc tiến trình và kỷ lục cũ từ ổ cứng lên
+        GameSaveData savedData = SaveManager.loadProgress();
+        this.level = savedData.getLevel();
+        this.score = savedData.getScore();
+        this.lives = savedData.getLives();
+        this.highScore = savedData.getHighScore();
 
         setPreferredSize(new Dimension(map.getWidthInPixels(), map.getHeightInPixels()));
         setBackground(Color.BLACK);
@@ -171,7 +183,7 @@ public class GamePanel extends JPanel {
 
         g.setColor(new Color(241, 245, 249));
         g.setFont(new Font("SansSerif", Font.BOLD, 12));
-        g.drawString("WASD / Mũi tên: Di chuyển  |  R: Đặt lại  |  ESC: Tạm dừng", 20, 27);
+        g.drawString("MÀN: " + level + "  |  ĐIỂM: " + score + "  |  KỶ LỤC: " + highScore + "  |  MẠNG: " + lives, 20, 27);
     }
 
     // Các phương thức chuyển trạng thái Game
@@ -193,9 +205,10 @@ public class GamePanel extends JPanel {
     }
 
     public void returnToMenu() {
-        player.stopMoving();
-        this.state = GameState.MENU;
-        setCursor(Cursor.getDefaultCursor());
+    player.stopMoving();
+    SaveManager.saveProgress(level, score, lives, highScore); // <-- Lưu lại
+    this.state = GameState.MENU;
+    setCursor(Cursor.getDefaultCursor());
     }
 
     public void setState(GameState state) {

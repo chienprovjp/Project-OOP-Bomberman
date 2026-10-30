@@ -1,5 +1,4 @@
 package bomberman.gui;
-
 import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -7,7 +6,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 
 public class GameMap {
-    // Kích thước ô tile chuẩn: 48px giúp game hiển thị to rõ, đẹp mắt trên mọi màn hình
+    // Kích thước ô tile chuẩn: 48px 
     public static final int TILE_SIZE = 48;
     public static final int COLS = 21;
     public static final int ROWS = 13;
