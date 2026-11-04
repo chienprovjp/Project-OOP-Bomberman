@@ -5,16 +5,13 @@ import bomberman.gui.GameMap;
 import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.List;
 
-public class Player {
-    private int x;
-    private int y;
-    // Tự động căn chỉnh kích thước hitbox theo TILE_SIZE (khoảng 72% ô)
-    private int width = (int) (GameMap.TILE_SIZE * 0.72);
-    private int height = (int) (GameMap.TILE_SIZE * 0.72);
+public class Player extends Entity {
     private int speed = Math.max(3, GameMap.TILE_SIZE / 12);
 
     private boolean isMovingUp = false;
@@ -34,8 +31,7 @@ public class Player {
     private BufferedImage spriteRight;
 
     public Player(int startX, int startY) {
-        this.x = startX;
-        this.y = startY;
+        super(startX, startY, (int) (GameMap.TILE_SIZE * 0.72), (int) (GameMap.TILE_SIZE * 0.72));
         loadSprites();
     }
 
@@ -75,7 +71,16 @@ public class Player {
         return null;
     }
 
+    @Override
+    public void update() {
+        // Cập nhật logic Player nếu cần
+    }
+
     public void move(GameMap map) {
+        move(map, null);
+    }
+
+    public void move(GameMap map, List<Bomb> bombs) {
         int dx = 0;
         int dy = 0;
 
@@ -91,14 +96,33 @@ public class Player {
         else if (isMovingRight) direction = Direction.RIGHT;
 
         // Tách riêng trục X và Y để nhân vật trượt mượt mà khi đi chéo hoặc sát tường
-        if (dx != 0 && !map.checkCollision(x + dx, y, width, height)) {
+        if (dx != 0 && !map.checkCollision(x + dx, y, width, height)
+                && !checkBombCollision(x + dx, y, width, height, bombs)) {
             x += dx;
         }
-        if (dy != 0 && !map.checkCollision(x, y + dy, width, height)) {
+        if (dy != 0 && !map.checkCollision(x, y + dy, width, height)
+                && !checkBombCollision(x, y + dy, width, height, bombs)) {
             y += dy;
         }
     }
 
+    private boolean checkBombCollision(int targetX, int targetY, int targetW, int targetH, List<Bomb> bombs) {
+        if (bombs == null || bombs.isEmpty()) return false;
+        Rectangle targetBox = new Rectangle(targetX, targetY, targetW, targetH);
+        for (Bomb b : bombs) {
+            if (b.isExploded()) continue;
+            if (b.isPlayerAllowedInside()) {
+                // Player vừa đặt quả bom này nên vẫn được phép bước ra ngoài
+                continue;
+            }
+            if (targetBox.intersects(b.getBounds())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public void draw(Graphics g) {
         BufferedImage activeSprite = switch (direction) {
             case UP    -> spriteUp;
@@ -119,7 +143,6 @@ public class Player {
         if (activeSprite != null) {
             g.drawImage(activeSprite, drawX, drawY, GameMap.TILE_SIZE, GameMap.TILE_SIZE, null);
         } else {
-            // Fallback vẽ hình khối 2D của Khang nếu chưa có ảnh
             drawFallback(g);
         }
     }
@@ -177,9 +200,5 @@ public class Player {
         return spriteDown;
     }
 
-    public int getX() { return x; }
-    public int getY() { return y; }
-    public int getWidth() { return width; }
-    public int getHeight() { return height; }
     public Direction getDirection() { return direction; }
 }

@@ -266,6 +266,7 @@ public class Menu {
             { "W, A, S, D  /  Phím Mũi Tên", "Di chuyển nhân vật (hỗ trợ trượt bo góc tường)" },
             { "Phím R", "Đặt lại vị trí nhân vật về điểm xuất phát" },
             { "Phím ESC", "Tạm dừng trò chơi hoặc quay lại Menu" },
+            { "Phím SPACE", "Đặt bom phá gạch & diệt quái" },
             { "Mục tiêu", "Khám phá bản đồ, vượt chướng ngại vật & tránh quái vật" }
         };
 
