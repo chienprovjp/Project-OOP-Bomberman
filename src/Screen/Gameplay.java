@@ -1,6 +1,7 @@
 package src.Screen;
 
 import src.Map.GameMap;
+import src.Map.MapData;
 import src.Window.Window;
 
 public class Gameplay extends Screen {
@@ -34,5 +35,20 @@ public class Gameplay extends Screen {
 
     public GameMap getGameMap() {
         return gameMap;
+    }
+
+    public void startLevel(int level) {
+        MapData.loadLevel(level);
+        gameMap.reload();
+        centerMap();
+    }
+
+    private void centerMap() {
+        gameMap.setLayoutX(
+            (Window.getInstance().getWidth() - gameMap.getWidth()) / 2
+        );
+        gameMap.setLayoutY(
+            (Window.getInstance().getHeight() - gameMap.getHeight()) / 2
+        );
     }
 }

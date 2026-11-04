@@ -30,6 +30,11 @@ public class GameMap extends Canvas {
 
         drawMap();
     }
+        public void reload() {
+        setWidth(MapData.COLS * TILE_SIZE);
+        setHeight(MapData.ROWS * TILE_SIZE);
+        drawMap();
+    }
 
     private Image loadImage(String path) {
         URL url = getClass().getResource(path);

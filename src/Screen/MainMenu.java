@@ -30,7 +30,7 @@ public class MainMenu extends Screen {
         playButtonImageView.setLayoutX(200);
         playButtonImageView.setLayoutY(400);
         playButtonImageView.setOnMouseClicked(change -> {
-            StateMachine.getInstance().setState(StateMachine.State.GAMEPLAY);
+            StateMachine.getInstance().setState(StateMachine.State.LEVEL_SELECT);
             Window.getInstance().changeScreen();
         });
 

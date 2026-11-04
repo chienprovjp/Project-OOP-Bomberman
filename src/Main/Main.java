@@ -10,6 +10,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage stage) {
+        window = Window.getInstance();
         // Bố cục chính
         stage.setTitle("Bomberman v3.14.15.9.26");
         stage.setResizable(false);
@@ -19,8 +20,6 @@ public class Main extends Application {
     }
 
     public static void main(String[] args) {
-        window = Window.getInstance();
-        StateMachine _ = StateMachine.getInstance();
         launch(args);
     }
 }

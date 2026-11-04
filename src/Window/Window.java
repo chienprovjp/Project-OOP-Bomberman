@@ -61,6 +61,9 @@ public class Window {
             case MAIN_MENU:
                 screen = MainMenu.getInstance();
                 break;
+            case LEVEL_SELECT:
+                screen = LevelSelect.getInstance();
+                break;
             case GAMEPLAY:
                 screen = Gameplay.getInstance();
                 break;

@@ -3,6 +3,7 @@ package src.Main;
 public class StateMachine {
     public enum State {
         MAIN_MENU,
+        LEVEL_SELECT,
         GAMEPLAY,
         PAUSE_MENU,
         GAME_OVER
