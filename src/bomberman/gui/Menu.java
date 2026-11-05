@@ -43,7 +43,8 @@ public class Menu {
         // Nạp ảnh nền Background.png từ nhánh feature/map-ui của Quốc
         try {
             File bgFile = new File("assets/Background.png");
-            if (!bgFile.exists()) bgFile = new File("assets/background.png");
+            if (!bgFile.exists())
+                bgFile = new File("assets/background.png");
             if (bgFile.exists()) {
                 backgroundImage = ImageIO.read(bgFile);
             }
@@ -53,7 +54,8 @@ public class Menu {
         // Nạp ảnh nút Play.png
         try {
             File playFile = new File("assets/Buttons/Play.png");
-            if (!playFile.exists()) playFile = new File("assets/Buttons/play.png");
+            if (!playFile.exists())
+                playFile = new File("assets/Buttons/play.png");
             if (playFile.exists()) {
                 playButtonImage = ImageIO.read(playFile);
             }
@@ -63,7 +65,8 @@ public class Menu {
         // Nạp icon player trang trí
         try {
             File f = new File("assets/images/player_down.png");
-            if (!f.exists()) f = new File("assets/images/player.png");
+            if (!f.exists())
+                f = new File("assets/images/player.png");
             if (f.exists()) {
                 playerIcon = ImageIO.read(f);
             }
@@ -77,13 +80,17 @@ public class Menu {
      * hoàn toàn không che nhân vật Bomberman trắng ở bên phải.
      */
     public void updateBounds(int width, int height) {
-        if (width <= 0) width = GameMap.COLS * GameMap.TILE_SIZE;
-        if (height <= 0) height = GameMap.ROWS * GameMap.TILE_SIZE;
+        if (width <= 0)
+            width = GameMap.COLS * GameMap.TILE_SIZE;
+        if (height <= 0)
+            height = GameMap.ROWS * GameMap.TILE_SIZE;
 
         // Kích thước nút tương xứng kích thước màn hình
         int btnW = (int) (width * 0.23);
-        if (btnW < 180) btnW = 180;
-        if (btnW > 240) btnW = 240;
+        if (btnW < 180)
+            btnW = 180;
+        if (btnW > 240)
+            btnW = 240;
 
         // Giữ đúng tỷ lệ ảnh nút Play.png của Quốc (940x265)
         int playH = (int) (btnW * (265.0 / 940.0));
@@ -263,11 +270,11 @@ public class Menu {
 
         // Bảng danh sách phím
         String[][] instructions = {
-            { "W, A, S, D  /  Phím Mũi Tên", "Di chuyển nhân vật (hỗ trợ trượt bo góc tường)" },
-            { "Phím R", "Đặt lại vị trí nhân vật về điểm xuất phát" },
-            { "Phím ESC", "Tạm dừng trò chơi hoặc quay lại Menu" },
-            { "Phím SPACE", "Đặt bom phá gạch & diệt quái" },
-            { "Mục tiêu", "Khám phá bản đồ, vượt chướng ngại vật & tránh quái vật" }
+                { "W, A, S, D  /  Phím Mũi Tên", "Di chuyển nhân vật (hỗ trợ trượt bo góc tường)" },
+                { "Phím R", "Đặt lại vị trí nhân vật về điểm xuất phát" },
+                { "Phím ESC", "Tạm dừng trò chơi hoặc quay lại Menu" },
+                { "Phím SPACE", "Đặt bom phá gạch & diệt quái" },
+                { "Mục tiêu", "Khám phá bản đồ, vượt chướng ngại vật & tránh quái vật" }
         };
 
         int rowY = cardY + 80;

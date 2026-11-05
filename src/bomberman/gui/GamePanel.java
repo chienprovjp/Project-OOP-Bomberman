@@ -143,7 +143,8 @@ public class GamePanel extends JPanel {
      * Đặt bom tại vị trí ô gạch mà Player đang đứng.
      */
     private void placeBomb() {
-        if (bombs.size() >= maxBombs) return;
+        if (bombs.size() >= maxBombs)
+            return;
 
         int pCol = (player.getX() + player.getWidth() / 2) / GameMap.TILE_SIZE;
         int pRow = (player.getY() + player.getHeight() / 2) / GameMap.TILE_SIZE;
@@ -280,7 +281,8 @@ public class GamePanel extends JPanel {
                     case MENU -> menu.handleMenuMouseClick(mx, my, GamePanel.this);
                     case HELP -> menu.handleHelpMouseClick(mx, my, GamePanel.this);
                     case PAUSED -> menu.handlePauseMouseClick(mx, my, GamePanel.this);
-                    default -> {}
+                    default -> {
+                    }
                 }
             }
         };
@@ -332,8 +334,10 @@ public class GamePanel extends JPanel {
             }
             case PAUSED -> {
                 map.draw(g);
-                for (Bomb b : bombs) b.draw(g);
-                for (Enemy enemy : enemies) enemy.draw(g);
+                for (Bomb b : bombs)
+                    b.draw(g);
+                for (Enemy enemy : enemies)
+                    enemy.draw(g);
                 player.draw(g);
                 menu.drawPause(g, width, height);
             }
@@ -351,7 +355,8 @@ public class GamePanel extends JPanel {
 
         g.setColor(new Color(241, 245, 249));
         g.setFont(new Font("SansSerif", Font.BOLD, 12));
-        g.drawString("MÀN: " + level + "  |  ĐIỂM: " + score + "  |  KỶ LỤC: " + highScore + "  |  MẠNG: " + lives + "  |  SPACE: ĐẶT BOM", 20, 27);
+        g.drawString("MÀN: " + level + "  |  ĐIỂM: " + score + "  |  KỶ LỤC: " + highScore + "  |  MẠNG: " + lives
+                + "  |  SPACE: ĐẶT BOM", 20, 27);
     }
 
     // Các phương thức chuyển trạng thái Game
@@ -392,10 +397,27 @@ public class GamePanel extends JPanel {
         setCursor(Cursor.getDefaultCursor());
     }
 
-    public GameState getState() { return state; }
-    public GameMap getMap() { return map; }
-    public Player getPlayer() { return player; }
-    public Menu getMenu() { return menu; }
-    public List<Bomb> getBombs() { return bombs; }
-    public List<Enemy> getEnemies() { return enemies; }
+    public GameState getState() {
+        return state;
+    }
+
+    public GameMap getMap() {
+        return map;
+    }
+
+    public Player getPlayer() {
+        return player;
+    }
+
+    public Menu getMenu() {
+        return menu;
+    }
+
+    public List<Bomb> getBombs() {
+        return bombs;
+    }
+
+    public List<Enemy> getEnemies() {
+        return enemies;
+    }
 }
