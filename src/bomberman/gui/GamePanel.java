@@ -5,6 +5,9 @@ import bomberman.entities.Bomb;
 import bomberman.entities.Enemy;
 import bomberman.entities.Explosion;
 import bomberman.entities.Player;
+import bomberman.data.SaveManager;
+import bomberman.data.GameSaveData;
+import bomberman.data.MapData;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -13,6 +16,7 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -20,9 +24,6 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import bomberman.data.SaveManager;
-import bomberman.data.GameSaveData;
 
 public class GamePanel extends JPanel {
     private GameMap map;
@@ -57,12 +58,12 @@ public class GamePanel extends JPanel {
         this.lives = savedData.getLives();
         this.highScore = savedData.getHighScore();
 
-        setPreferredSize(new Dimension(map.getWidthInPixels(), map.getHeightInPixels()));
+        setPreferredSize(new Dimension(GameMap.DEFAULT_COLS * GameMap.TILE_SIZE, GameMap.DEFAULT_ROWS * GameMap.TILE_SIZE));
         setBackground(Color.BLACK);
         setFocusable(true);
 
         setupEventHandlers();
-        spawnEnemies(4);
+        spawnEnemies(3);
 
         // Vòng lặp game (~60 FPS)
         gameTimer = new Timer(16, e -> {
@@ -76,6 +77,8 @@ public class GamePanel extends JPanel {
     }
 
     private void updateGameLogic() {
+        if (state != GameState.PLAYING) return;
+
         player.move(map, bombs);
 
         if (invulnerableTimer > 0) {
@@ -104,6 +107,7 @@ public class GamePanel extends JPanel {
             // Kiểm tra lửa thiêu trúng Player
             if (invulnerableTimer <= 0 && exp.hitsEntity(player)) {
                 handlePlayerDamage();
+                if (state != GameState.PLAYING) return;
             }
 
             // Kiểm tra lửa thiêu trúng Kẻ địch
@@ -132,10 +136,16 @@ public class GamePanel extends JPanel {
                 // Kẻ địch chạm vào Player
                 if (invulnerableTimer <= 0 && enemy.intersects(player)) {
                     handlePlayerDamage();
+                    if (state != GameState.PLAYING) return;
                 }
             } else {
                 enemyIt.remove();
             }
+        }
+
+        // 4. Kiểm tra điều kiện thắng màn: Đã tiêu diệt hết quái vật!
+        if (enemies.isEmpty()) {
+            triggerVictory();
         }
     }
 
@@ -167,32 +177,92 @@ public class GamePanel extends JPanel {
         invulnerableTimer = 90; // ~1.5 giây bất tử nhấp nháy
 
         if (lives <= 0) {
-            // Hết mạng -> Lưu kỷ lục và quay về Menu
-            SaveManager.saveProgress(1, 0, 3, highScore);
-            lives = 3;
-            score = 0;
-            level = 1;
-            bombs.clear();
-            explosions.clear();
-            spawnEnemies(4);
-            player.reset(getPlayerSpawnX(), getPlayerSpawnY());
-            setState(GameState.MENU);
+            triggerGameOver();
         } else {
             player.reset(getPlayerSpawnX(), getPlayerSpawnY());
         }
     }
 
     /**
-     * Sinh ngẫu nhiên số lượng kẻ địch tại các vị trí cỏ an toàn cách xa Player.
+     * Kích hoạt trạng thái Game Over và lưu điểm kỷ lục.
+     */
+    public void triggerGameOver() {
+        player.stopMoving();
+        SaveManager.saveProgress(1, 0, 3, highScore);
+        this.state = GameState.GAME_OVER;
+        setCursor(Cursor.getDefaultCursor());
+    }
+
+    /**
+     * Kích hoạt trạng thái Chiến Thắng (Victory).
+     */
+    public void triggerVictory() {
+        player.stopMoving();
+        bombs.clear();
+        explosions.clear();
+        if (score > highScore) {
+            highScore = score;
+        }
+        SaveManager.saveProgress(level, score, lives, highScore);
+        this.state = GameState.VICTORY;
+        setCursor(Cursor.getDefaultCursor());
+    }
+
+    /**
+     * Bắt đầu màn chơi được chọn (Level 1, 2, 3...)
+     */
+    public void startLevel(int chosenLevel) {
+        this.level = chosenLevel;
+        map.loadLevel(chosenLevel);
+        bombs.clear();
+        explosions.clear();
+        player.reset(getPlayerSpawnX(), getPlayerSpawnY());
+        spawnEnemies(2 + chosenLevel);
+        this.state = GameState.PLAYING;
+        setCursor(Cursor.getDefaultCursor());
+    }
+
+    /**
+     * Chuyển sang màn tiếp theo khi chiến thắng
+     */
+    public void nextLevel() {
+        if (level < MapData.LEVEL_COUNT) {
+            startLevel(level + 1);
+        } else {
+            restartGame();
+        }
+    }
+
+    /**
+     * Chơi lại màn hiện tại
+     */
+    public void restartCurrentLevel() {
+        startLevel(this.level);
+    }
+
+    /**
+     * Chơi lại game từ Màn 1 (reset mạng và điểm)
+     */
+    public void restartGame() {
+        this.lives = 3;
+        this.score = 0;
+        startLevel(1);
+    }
+
+    /**
+     * Sinh ngẫu nhiên kẻ địch tại các vị trí cỏ an toàn cách xa điểm xuất phát.
      */
     private void spawnEnemies(int count) {
         enemies.clear();
         int spawned = 0;
-        for (int r = GameMap.ROWS - 2; r >= 1 && spawned < count; r--) {
-            for (int c = GameMap.COLS - 2; c >= 1 && spawned < count; c--) {
+        int mapRows = map.getRows();
+        int mapCols = map.getCols();
+
+        for (int r = mapRows - 2; r >= 1 && spawned < count; r--) {
+            for (int c = mapCols - 2; c >= 1 && spawned < count; c--) {
                 if (map.getTile(r, c) == GameMap.GRASS) {
                     int distFromSpawn = Math.abs(r - 1) + Math.abs(c - 1);
-                    if (distFromSpawn >= 6) {
+                    if (distFromSpawn >= 4) {
                         int spawnX = c * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - (int) (GameMap.TILE_SIZE * 0.70)) / 2;
                         int spawnY = r * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - (int) (GameMap.TILE_SIZE * 0.70)) / 2;
                         enemies.add(new Ballom(spawnX, spawnY));
@@ -218,6 +288,9 @@ public class GamePanel extends JPanel {
             public void keyPressed(KeyEvent e) {
                 switch (state) {
                     case MENU -> menu.handleMenuKeyPress(e, GamePanel.this);
+                    case LEVEL_SELECT -> menu.handleLevelSelectKeyPress(e, GamePanel.this);
+                    case GAME_OVER -> menu.handleGameOverKeyPress(e, GamePanel.this);
+                    case VICTORY -> menu.handleVictoryKeyPress(e, GamePanel.this, level >= MapData.LEVEL_COUNT);
                     case HELP -> {
                         int code = e.getKeyCode();
                         if (code == KeyEvent.VK_ESCAPE || code == KeyEvent.VK_ENTER || code == KeyEvent.VK_SPACE) {
@@ -229,7 +302,7 @@ public class GamePanel extends JPanel {
                             player.stopMoving();
                             setState(GameState.PAUSED);
                         } else if (e.getKeyCode() == KeyEvent.VK_R) {
-                            restartGame();
+                            restartCurrentLevel();
                         } else if (e.getKeyCode() == KeyEvent.VK_SPACE) {
                             placeBomb();
                         } else {
@@ -241,7 +314,7 @@ public class GamePanel extends JPanel {
                         if (code == KeyEvent.VK_ESCAPE) {
                             resumeGame();
                         } else if (code == KeyEvent.VK_R) {
-                            restartGame();
+                            restartCurrentLevel();
                         } else if (code == KeyEvent.VK_M) {
                             returnToMenu();
                         }
@@ -266,6 +339,9 @@ public class GamePanel extends JPanel {
                 menu.updateBounds(getWidth(), getHeight());
                 switch (state) {
                     case MENU -> menu.handleMenuMouseMove(mx, my, GamePanel.this);
+                    case LEVEL_SELECT -> menu.handleLevelSelectMouseMove(mx, my, GamePanel.this);
+                    case GAME_OVER -> menu.handleGameOverMouseMove(mx, my, GamePanel.this);
+                    case VICTORY -> menu.handleVictoryMouseMove(mx, my, GamePanel.this, level >= MapData.LEVEL_COUNT);
                     case HELP -> menu.handleHelpMouseMove(mx, my, GamePanel.this);
                     case PAUSED -> menu.handlePauseMouseMove(mx, my, GamePanel.this);
                     default -> setCursor(Cursor.getDefaultCursor());
@@ -279,10 +355,12 @@ public class GamePanel extends JPanel {
                 menu.updateBounds(getWidth(), getHeight());
                 switch (state) {
                     case MENU -> menu.handleMenuMouseClick(mx, my, GamePanel.this);
+                    case LEVEL_SELECT -> menu.handleLevelSelectMouseClick(mx, my, GamePanel.this);
+                    case GAME_OVER -> menu.handleGameOverMouseClick(mx, my, GamePanel.this);
+                    case VICTORY -> menu.handleVictoryMouseClick(mx, my, GamePanel.this, level >= MapData.LEVEL_COUNT);
                     case HELP -> menu.handleHelpMouseClick(mx, my, GamePanel.this);
                     case PAUSED -> menu.handlePauseMouseClick(mx, my, GamePanel.this);
-                    default -> {
-                    }
+                    default -> {}
                 }
             }
         };
@@ -305,41 +383,58 @@ public class GamePanel extends JPanel {
                 }
                 menu.drawMenu(g, width, height);
             }
-            case PLAYING -> {
+            case LEVEL_SELECT -> {
+                menu.drawLevelSelect(g, width, height);
+            }
+            case PLAYING, PAUSED, GAME_OVER, VICTORY -> {
+                // Tự động căn giữa bản đồ nếu kích thước bản đồ nhỏ hơn cửa sổ
+                int offsetX = Math.max(0, (width - map.getWidthInPixels()) / 2);
+                int offsetY = Math.max(0, (height - map.getHeightInPixels()) / 2);
+
+                g.setColor(new Color(15, 23, 42));
+                g.fillRect(0, 0, width, height);
+
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.translate(offsetX, offsetY);
+
                 // 1. Vẽ bản đồ (cỏ, tường đá, gạch)
-                map.draw(g);
+                map.draw(g2d);
 
                 // 2. Vẽ Bombs
                 for (Bomb b : bombs) {
-                    b.draw(g);
+                    b.draw(g2d);
                 }
 
                 // 3. Vẽ Vụ nổ
                 for (Explosion exp : explosions) {
-                    exp.draw(g);
+                    exp.draw(g2d);
                 }
 
                 // 4. Vẽ Kẻ địch
                 for (Enemy enemy : enemies) {
-                    enemy.draw(g);
+                    enemy.draw(g2d);
                 }
 
                 // 5. Vẽ Player (nhấp nháy khi bất tử)
-                if (invulnerableTimer == 0 || (invulnerableTimer / 5) % 2 == 0) {
-                    player.draw(g);
+                if (state != GameState.GAME_OVER) {
+                    if (invulnerableTimer == 0 || (invulnerableTimer / 5) % 2 == 0) {
+                        player.draw(g2d);
+                    }
                 }
+
+                g2d.dispose();
 
                 // 6. HUD hiển thị thông tin
                 drawHUD(g);
-            }
-            case PAUSED -> {
-                map.draw(g);
-                for (Bomb b : bombs)
-                    b.draw(g);
-                for (Enemy enemy : enemies)
-                    enemy.draw(g);
-                player.draw(g);
-                menu.drawPause(g, width, height);
+
+                // 7. Lớp phủ tương ứng với trạng thái
+                if (state == GameState.PAUSED) {
+                    menu.drawPause(g, width, height);
+                } else if (state == GameState.GAME_OVER) {
+                    menu.drawGameOver(g, width, height, score, highScore, level);
+                } else if (state == GameState.VICTORY) {
+                    menu.drawVictory(g, width, height, score, highScore, level);
+                }
             }
             case HELP -> {
                 menu.drawHelp(g, width, height);
@@ -361,24 +456,10 @@ public class GamePanel extends JPanel {
 
     // Các phương thức chuyển trạng thái Game
     public void startGame() {
-        bombs.clear();
-        explosions.clear();
-        spawnEnemies(4);
-        player.reset(getPlayerSpawnX(), getPlayerSpawnY());
-        this.state = GameState.PLAYING;
-        setCursor(Cursor.getDefaultCursor());
+        startLevel(1);
     }
 
     public void resumeGame() {
-        this.state = GameState.PLAYING;
-        setCursor(Cursor.getDefaultCursor());
-    }
-
-    public void restartGame() {
-        bombs.clear();
-        explosions.clear();
-        spawnEnemies(4);
-        player.reset(getPlayerSpawnX(), getPlayerSpawnY());
         this.state = GameState.PLAYING;
         setCursor(Cursor.getDefaultCursor());
     }

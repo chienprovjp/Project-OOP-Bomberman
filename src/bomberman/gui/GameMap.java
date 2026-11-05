@@ -1,4 +1,7 @@
 package bomberman.gui;
+
+import bomberman.data.MapData;
+
 import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -8,14 +11,18 @@ import java.io.File;
 public class GameMap {
     // Kích thước ô tile chuẩn: 48px 
     public static final int TILE_SIZE = 48;
-    public static final int COLS = 21;
-    public static final int ROWS = 13;
+    public static final int DEFAULT_COLS = 21;
+    public static final int DEFAULT_ROWS = 13;
+    public static final int COLS = DEFAULT_COLS;
+    public static final int ROWS = DEFAULT_ROWS;
 
     // Định nghĩa các loại ô trên bản đồ
     public static final int GRASS = 0; // Cỏ - có thể đi qua
     public static final int WALL  = 1; // Tường cố định - không đi qua được, không phá được
     public static final int BRICK = 2; // Tường gạch - không đi qua được, có thể phá hủy
 
+    private int rows = DEFAULT_ROWS;
+    private int cols = DEFAULT_COLS;
     private int[][] tiles;
 
     // Sprite hình ảnh môi trường
@@ -59,14 +66,30 @@ public class GameMap {
         return null;
     }
 
-    private void initDefaultMap() {
-        tiles = new int[ROWS][COLS];
+    /**
+     * Nạp dữ liệu bản đồ từ file theo màn chơi (Level 1, 2, 3...).
+     */
+    public void loadLevel(int level) {
+        int[][] loaded = MapData.loadLevel(level);
+        if (loaded != null && loaded.length > 0 && loaded[0].length > 0) {
+            this.tiles = loaded;
+            this.rows = loaded.length;
+            this.cols = loaded[0].length;
+        } else {
+            initDefaultMap();
+        }
+    }
+
+    public void initDefaultMap() {
+        this.rows = DEFAULT_ROWS;
+        this.cols = DEFAULT_COLS;
+        this.tiles = new int[rows][cols];
 
         // Khởi tạo layout bản đồ chuẩn Bomberman
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
                 // Tường bao quanh viền ngoài
-                if (row == 0 || row == ROWS - 1 || col == 0 || col == COLS - 1) {
+                if (row == 0 || row == rows - 1 || col == 0 || col == cols - 1) {
                     tiles[row][col] = WALL;
                 }
                 // Các cột trụ cố định
@@ -98,7 +121,7 @@ public class GameMap {
         for (int[] pos : sampleBricks) {
             int r = pos[0];
             int c = pos[1];
-            if (r > 0 && r < ROWS - 1 && c > 0 && c < COLS - 1) {
+            if (r > 0 && r < rows - 1 && c > 0 && c < cols - 1) {
                 // Không đặt gạch lên cột trụ tường cố định
                 if (tiles[r][c] != WALL) {
                     tiles[r][c] = BRICK;
@@ -122,7 +145,7 @@ public class GameMap {
         int bottomRow = (y + height - 1) / TILE_SIZE;
 
         // Vượt ra ngoài biên bản đồ
-        if (leftCol < 0 || rightCol >= COLS || topRow < 0 || bottomRow >= ROWS) {
+        if (leftCol < 0 || rightCol >= cols || topRow < 0 || bottomRow >= rows) {
             return true;
         }
 
@@ -141,7 +164,7 @@ public class GameMap {
      * Phá hủy tường gạch tại vị trí hàng và cột.
      */
     public boolean destroyBrick(int row, int col) {
-        if (row >= 0 && row < ROWS && col >= 0 && col < COLS && tiles[row][col] == BRICK) {
+        if (row >= 0 && row < rows && col >= 0 && col < cols && tiles[row][col] == BRICK) {
             tiles[row][col] = GRASS;
             return true;
         }
@@ -149,13 +172,13 @@ public class GameMap {
     }
 
     public int getTile(int row, int col) {
-        if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return WALL;
+        if (row < 0 || row >= rows || col < 0 || col >= cols) return WALL;
         return tiles[row][col];
     }
 
     public void draw(Graphics g) {
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
                 int pixelX = col * TILE_SIZE;
                 int pixelY = row * TILE_SIZE;
 
@@ -194,10 +217,18 @@ public class GameMap {
     }
 
     public int getWidthInPixels() {
-        return COLS * TILE_SIZE;
+        return cols * TILE_SIZE;
     }
 
     public int getHeightInPixels() {
-        return ROWS * TILE_SIZE;
+        return rows * TILE_SIZE;
+    }
+
+    public int getRows() {
+        return rows;
+    }
+
+    public int getCols() {
+        return cols;
     }
 }
