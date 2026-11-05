@@ -40,38 +40,43 @@ public class Menu {
     }
 
     private void loadAssets() {
-        // Nạp ảnh nền Background.png từ nhánh feature/map-ui của Quốc
-        try {
-            File bgFile = new File("assets/Background.png");
-            if (!bgFile.exists())
-                bgFile = new File("assets/background.png");
-            if (bgFile.exists()) {
-                backgroundImage = ImageIO.read(bgFile);
-            }
-        } catch (Exception ignored) {
+        backgroundImage = loadMenuImage("assets/Background.png");
+        if (backgroundImage == null) {
+            backgroundImage = loadMenuImage("assets/background.png");
         }
 
-        // Nạp ảnh nút Play.png
-        try {
-            File playFile = new File("assets/Buttons/Play.png");
-            if (!playFile.exists())
-                playFile = new File("assets/Buttons/play.png");
-            if (playFile.exists()) {
-                playButtonImage = ImageIO.read(playFile);
-            }
-        } catch (Exception ignored) {
+        playButtonImage = loadMenuImage("assets/Buttons/Play.png");
+        if (playButtonImage == null) {
+            playButtonImage = loadMenuImage("assets/Buttons/play.png");
         }
 
-        // Nạp icon player trang trí
+        playerIcon = loadMenuImage("assets/images/player_down.png");
+        if (playerIcon == null) {
+            playerIcon = loadMenuImage("assets/images/player.png");
+        }
+    }
+
+    private BufferedImage loadMenuImage(String relativePath) {
         try {
-            File f = new File("assets/images/player_down.png");
-            if (!f.exists())
-                f = new File("assets/images/player.png");
+            var url = getClass().getResource("/" + relativePath);
+            if (url != null) return ImageIO.read(url);
+        } catch (Exception ignored) {}
+
+        String[] possiblePaths = {
+            relativePath,
+            "BTL/Project-OOP-Bomberman/" + relativePath,
+            "Project-OOP-Bomberman/" + relativePath
+        };
+
+        for (String p : possiblePaths) {
+            File f = new File(p);
             if (f.exists()) {
-                playerIcon = ImageIO.read(f);
+                try {
+                    return ImageIO.read(f);
+                } catch (Exception ignored) {}
             }
-        } catch (Exception ignored) {
         }
+        return null;
     }
 
     /**

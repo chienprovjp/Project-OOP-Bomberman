@@ -63,10 +63,20 @@ public class Player extends Entity {
             if (url != null) return ImageIO.read(url);
         } catch (Exception ignored) {}
 
-        try {
-            File f = new File("assets/images/" + fileName);
-            if (f.exists()) return ImageIO.read(f);
-        } catch (Exception ignored) {}
+        String[] possiblePaths = {
+            "assets/images/" + fileName,
+            "BTL/Project-OOP-Bomberman/assets/images/" + fileName,
+            "Project-OOP-Bomberman/assets/images/" + fileName
+        };
+
+        for (String p : possiblePaths) {
+            File f = new File(p);
+            if (f.exists()) {
+                try {
+                    return ImageIO.read(f);
+                } catch (Exception ignored) {}
+            }
+        }
 
         return null;
     }

@@ -37,23 +37,24 @@ public class GameMap {
     private BufferedImage loadImage(String path) {
         try {
             var url = getClass().getResource(path);
-            if (url != null) {
-                return ImageIO.read(url);
-            }
+            if (url != null) return ImageIO.read(url);
         } catch (Exception ignored) {}
 
-        try {
-            String cleanPath = path.startsWith("/") ? path.substring(1) : path;
-            File file = new File(cleanPath);
+        String cleanPath = path.startsWith("/") ? path.substring(1) : path;
+        String[] possiblePaths = {
+            cleanPath,
+            "BTL/Project-OOP-Bomberman/" + cleanPath,
+            "Project-OOP-Bomberman/" + cleanPath
+        };
+
+        for (String p : possiblePaths) {
+            File file = new File(p);
             if (file.exists()) {
-                return ImageIO.read(file);
+                try {
+                    return ImageIO.read(file);
+                } catch (Exception ignored) {}
             }
-
-            File fallback = new File("assets/images/" + new File(path).getName());
-            if (fallback.exists()) {
-                return ImageIO.read(fallback);
-            }
-        } catch (Exception ignored) {}
+        }
 
         return null;
     }
