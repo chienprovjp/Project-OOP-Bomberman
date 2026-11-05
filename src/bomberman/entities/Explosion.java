@@ -2,14 +2,17 @@ package bomberman.entities;
 
 import bomberman.gui.GameMap;
 
+import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Lớp vụ nổ: lan tỏa tia lửa 4 hướng, phá gạch và thiêu rụi thực thể.
+ * Lớp vụ nổ: lan tỏa tia lửa 4 hướng, phá gạch và nạp ảnh explosion.png.
  */
 public class Explosion extends Entity {
 
@@ -37,6 +40,9 @@ public class Explosion extends Entity {
     private List<FlameSegment> segments = new ArrayList<>();
     private int duration = 28; // Tồn tại ~0.45s
     private int tick = 0;
+
+    // Ảnh tia lửa vụ nổ
+    private static BufferedImage sprite = loadExplosionSprite();
 
     public Explosion(int centerCol, int centerRow, int radius, GameMap map) {
         super(centerCol * GameMap.TILE_SIZE,
@@ -72,6 +78,29 @@ public class Explosion extends Entity {
         }
     }
 
+    private static BufferedImage loadExplosionSprite() {
+        String fileName = "explosion.png";
+        try {
+            var url = Explosion.class.getResource("/assets/images/" + fileName);
+            if (url != null) return ImageIO.read(url);
+        } catch (Exception ignored) {}
+
+        String[] paths = {
+            "assets/images/" + fileName,
+            "BTL/Project-OOP-Bomberman/assets/images/" + fileName,
+            "Project-OOP-Bomberman/assets/images/" + fileName
+        };
+        for (String p : paths) {
+            File f = new File(p);
+            if (f.exists()) {
+                try {
+                    return ImageIO.read(f);
+                } catch (Exception ignored) {}
+            }
+        }
+        return null;
+    }
+
     @Override
     public void update() {
         duration--;
@@ -102,22 +131,26 @@ public class Explosion extends Entity {
             int py = seg.row * GameMap.TILE_SIZE;
             int shrink = (tick % 4);
 
-            // Tầng ngoài: Đỏ cam
-            g.setColor(new Color(239, 68, 68, 220));
-            g.fillRoundRect(px + shrink, py + shrink,
-                    GameMap.TILE_SIZE - shrink * 2, GameMap.TILE_SIZE - shrink * 2, 8, 8);
+            if (sprite != null) {
+                // Vẽ ảnh explosion.png
+                g.drawImage(sprite, px + shrink, py + shrink,
+                        GameMap.TILE_SIZE - shrink * 2, GameMap.TILE_SIZE - shrink * 2, null);
+            } else {
+                // Vẽ dự phòng nếu thiếu ảnh
+                g.setColor(new Color(239, 68, 68, 220));
+                g.fillRoundRect(px + shrink, py + shrink,
+                        GameMap.TILE_SIZE - shrink * 2, GameMap.TILE_SIZE - shrink * 2, 8, 8);
 
-            // Tầng giữa: Vàng cam
-            g.setColor(new Color(249, 115, 22, 230));
-            int midPad = 6 + shrink;
-            g.fillRoundRect(px + midPad, py + midPad,
-                    GameMap.TILE_SIZE - midPad * 2, GameMap.TILE_SIZE - midPad * 2, 6, 6);
+                g.setColor(new Color(249, 115, 22, 230));
+                int midPad = 6 + shrink;
+                g.fillRoundRect(px + midPad, py + midPad,
+                        GameMap.TILE_SIZE - midPad * 2, GameMap.TILE_SIZE - midPad * 2, 6, 6);
 
-            // Lõi tâm lửa: Sáng rực
-            g.setColor(new Color(254, 240, 138, 240));
-            int corePad = 12 + shrink;
-            g.fillOval(px + corePad, py + corePad,
-                    GameMap.TILE_SIZE - corePad * 2, GameMap.TILE_SIZE - corePad * 2);
+                g.setColor(new Color(254, 240, 138, 240));
+                int corePad = 12 + shrink;
+                g.fillOval(px + corePad, py + corePad,
+                        GameMap.TILE_SIZE - corePad * 2, GameMap.TILE_SIZE - corePad * 2);
+            }
         }
     }
 

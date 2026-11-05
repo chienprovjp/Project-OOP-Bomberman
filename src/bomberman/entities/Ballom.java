@@ -2,8 +2,11 @@ package bomberman.entities;
 
 import bomberman.gui.GameMap;
 
+import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,12 +18,38 @@ public class Ballom extends Enemy {
     private int animationTick = 0;
     private int deathAnimation = 0;
 
+    // Ảnh kẻ địch Ballom
+    private static BufferedImage sprite = loadBallomSprite();
+
     public Ballom(int startX, int startY) {
         super(startX, startY,
               (int) (GameMap.TILE_SIZE * 0.70),
               (int) (GameMap.TILE_SIZE * 0.70),
               2);
         this.scoreReward = 100;
+    }
+
+    private static BufferedImage loadBallomSprite() {
+        String fileName = "ballom.png";
+        try {
+            var url = Ballom.class.getResource("/assets/images/" + fileName);
+            if (url != null) return ImageIO.read(url);
+        } catch (Exception ignored) {}
+
+        String[] paths = {
+            "assets/images/" + fileName,
+            "BTL/Project-OOP-Bomberman/assets/images/" + fileName,
+            "Project-OOP-Bomberman/assets/images/" + fileName
+        };
+        for (String p : paths) {
+            File f = new File(p);
+            if (f.exists()) {
+                try {
+                    return ImageIO.read(f);
+                } catch (Exception ignored) {}
+            }
+        }
+        return null;
     }
 
     @Override
@@ -109,52 +138,53 @@ public class Ballom extends Enemy {
             return;
         }
 
-        // Bóng mờ
-        g.setColor(new Color(0, 0, 0, 50));
-        g.fillOval(x + 2, y + height - 3, width - 4, 6);
-
-        // Thân bóng màu cam
         int pulse = (animationTick / 10) % 2 == 0 ? 1 : 0;
         int bodyW = width + pulse;
         int bodyH = height - pulse;
         int bodyX = x - pulse / 2;
         int bodyY = y + pulse;
 
-        g.setColor(new Color(249, 115, 22));
-        g.fillOval(bodyX, bodyY, bodyW, bodyH);
-        g.setColor(new Color(194, 65, 12));
-        g.drawOval(bodyX, bodyY, bodyW, bodyH);
+        if (sprite != null) {
+            // Vẽ ảnh ballom.png
+            g.drawImage(sprite, bodyX, bodyY, bodyW, bodyH, null);
+        } else {
+            // Vẽ dự phòng nếu thiếu ảnh
+            g.setColor(new Color(0, 0, 0, 50));
+            g.fillOval(x + 2, y + height - 3, width - 4, 6);
 
-        // Vệt sáng
-        g.setColor(new Color(255, 255, 255, 140));
-        g.fillOval(bodyX + bodyW / 4, bodyY + 4, bodyW / 3, bodyH / 4);
+            g.setColor(new Color(249, 115, 22));
+            g.fillOval(bodyX, bodyY, bodyW, bodyH);
+            g.setColor(new Color(194, 65, 12));
+            g.drawOval(bodyX, bodyY, bodyW, bodyH);
 
-        // Mắt nhìn theo hướng di chuyển
-        int eyeOffsetX = switch (direction) {
-            case LEFT  -> -3;
-            case RIGHT -> 3;
-            default    -> 0;
-        };
-        int eyeOffsetY = switch (direction) {
-            case UP    -> -2;
-            case DOWN  -> 2;
-            default    -> 0;
-        };
+            g.setColor(new Color(255, 255, 255, 140));
+            g.fillOval(bodyX + bodyW / 4, bodyY + 4, bodyW / 3, bodyH / 4);
 
-        int eye1X = bodyX + bodyW / 2 - 8 + eyeOffsetX;
-        int eye2X = bodyX + bodyW / 2 + 2 + eyeOffsetX;
-        int eyeY  = bodyY + bodyH / 3 + eyeOffsetY;
+            int eyeOffsetX = switch (direction) {
+                case LEFT  -> -3;
+                case RIGHT -> 3;
+                default    -> 0;
+            };
+            int eyeOffsetY = switch (direction) {
+                case UP    -> -2;
+                case DOWN  -> 2;
+                default    -> 0;
+            };
 
-        g.setColor(Color.WHITE);
-        g.fillOval(eye1X, eyeY, 6, 8);
-        g.fillOval(eye2X, eyeY, 6, 8);
+            int eye1X = bodyX + bodyW / 2 - 8 + eyeOffsetX;
+            int eye2X = bodyX + bodyW / 2 + 2 + eyeOffsetX;
+            int eyeY  = bodyY + bodyH / 3 + eyeOffsetY;
 
-        g.setColor(Color.BLACK);
-        g.fillOval(eye1X + 2 + eyeOffsetX / 2, eyeY + 2 + eyeOffsetY / 2, 3, 4);
-        g.fillOval(eye2X + 2 + eyeOffsetX / 2, eyeY + 2 + eyeOffsetY / 2, 3, 4);
+            g.setColor(Color.WHITE);
+            g.fillOval(eye1X, eyeY, 6, 8);
+            g.fillOval(eye2X, eyeY, 6, 8);
 
-        // Miệng
-        g.setColor(new Color(124, 45, 18));
-        g.drawArc(bodyX + bodyW / 2 - 4 + eyeOffsetX, bodyY + bodyH / 2 + 4, 8, 5, 0, -180);
+            g.setColor(Color.BLACK);
+            g.fillOval(eye1X + 2 + eyeOffsetX / 2, eyeY + 2 + eyeOffsetY / 2, 3, 4);
+            g.fillOval(eye2X + 2 + eyeOffsetX / 2, eyeY + 2 + eyeOffsetY / 2, 3, 4);
+
+            g.setColor(new Color(124, 45, 18));
+            g.drawArc(bodyX + bodyW / 2 - 4 + eyeOffsetX, bodyY + bodyH / 2 + 4, 8, 5, 0, -180);
+        }
     }
 }
