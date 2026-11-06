@@ -60,7 +60,8 @@ public class GamePanel extends JPanel {
         this.lives = savedData.getLives();
         this.highScore = savedData.getHighScore();
 
-        setPreferredSize(new Dimension(GameMap.DEFAULT_COLS * GameMap.TILE_SIZE, GameMap.DEFAULT_ROWS * GameMap.TILE_SIZE));
+        setPreferredSize(
+                new Dimension(GameMap.DEFAULT_COLS * GameMap.TILE_SIZE, GameMap.DEFAULT_ROWS * GameMap.TILE_SIZE));
         setBackground(Color.BLACK);
         setFocusable(true);
 
@@ -79,7 +80,8 @@ public class GamePanel extends JPanel {
     }
 
     private void updateGameLogic() {
-        if (state != GameState.PLAYING) return;
+        if (state != GameState.PLAYING)
+            return;
 
         player.move(map, bombs);
 
@@ -109,7 +111,8 @@ public class GamePanel extends JPanel {
             // Kiểm tra lửa thiêu trúng Player
             if (invulnerableTimer <= 0 && exp.hitsEntity(player)) {
                 handlePlayerDamage();
-                if (state != GameState.PLAYING) return;
+                if (state != GameState.PLAYING)
+                    return;
             }
 
             // Kiểm tra lửa thiêu trúng Kẻ địch
@@ -138,7 +141,8 @@ public class GamePanel extends JPanel {
                 // Kẻ địch chạm vào Player
                 if (invulnerableTimer <= 0 && enemy.intersects(player)) {
                     handlePlayerDamage();
-                    if (state != GameState.PLAYING) return;
+                    if (state != GameState.PLAYING)
+                        return;
                 }
             } else {
                 enemyIt.remove();
@@ -232,7 +236,8 @@ public class GamePanel extends JPanel {
         spawnEnemies(2 + this.level);
         this.state = GameState.PLAYING;
         setCursor(Cursor.getDefaultCursor());
-        System.out.println("[GamePanel] Tiếp tục chơi: Màn " + this.level + " | Điểm: " + this.score + " | Mạng: " + this.lives);
+        System.out.println(
+                "[GamePanel] Tiếp tục chơi: Màn " + this.level + " | Điểm: " + this.score + " | Mạng: " + this.lives);
     }
 
     /**
@@ -419,7 +424,8 @@ public class GamePanel extends JPanel {
                     case VICTORY -> menu.handleVictoryMouseClick(mx, my, GamePanel.this, level >= MapData.LEVEL_COUNT);
                     case HELP -> menu.handleHelpMouseClick(mx, my, GamePanel.this);
                     case PAUSED -> menu.handlePauseMouseClick(mx, my, GamePanel.this);
-                    default -> {}
+                    default -> {
+                    }
                 }
             }
         };
