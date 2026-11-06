@@ -11,9 +11,9 @@ public class GameMap extends Canvas {
     public static final int TILE_SIZE = 32;
 
     private final GraphicsContext gc;
-    private final Image grassImage;
-    private final Image wallImage;
-    private final Image brickImage;
+    private Image grassImage;
+    private Image wallImage;
+    private Image brickImage;
 
     public GameMap() {
         super(
@@ -24,16 +24,22 @@ public class GameMap extends Canvas {
         gc = getGraphicsContext2D();
         gc.setImageSmoothing(false);
 
-        grassImage = loadImage("/assets/images/grass.png");
-        wallImage = loadImage("/assets/images/wall.png");
-        brickImage = loadImage("/assets/images/brick.png");
+        loadLevelImages(MapData.getCurrentLevel());
 
         drawMap();
     }
-        public void reload() {
+
+    public void reload() {
         setWidth(MapData.COLS * TILE_SIZE);
         setHeight(MapData.ROWS * TILE_SIZE);
+        loadLevelImages(MapData.getCurrentLevel());
         drawMap();
+    }
+
+    private void loadLevelImages(int level) {
+        grassImage = loadImage("/assets/images/grass" + level + ".png");
+        wallImage = loadImage("/assets/images/wall" + level + ".png");
+        brickImage = loadImage("/assets/images/brick" + level + ".png");
     }
 
     private Image loadImage(String path) {

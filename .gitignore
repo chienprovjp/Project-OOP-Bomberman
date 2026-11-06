@@ -6,6 +6,7 @@
 /out/
 /target/
 /lib/
+/javafx-sdk-25.0.5/
 
 # Logs
 *.log
