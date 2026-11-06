@@ -1,13 +1,12 @@
-package bomberman.entities;
+package bomberman.model;
 
-import bomberman.gui.GameMap;
+import bomberman.component.Entity;
+import bomberman.util.ResourceLoader;
 
-import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,7 +41,7 @@ public class Explosion extends Entity {
     private int tick = 0;
 
     // Ảnh tia lửa vụ nổ
-    private static BufferedImage sprite = loadExplosionSprite();
+    private static BufferedImage sprite = ResourceLoader.loadImage("explosion.png");
 
     public Explosion(int centerCol, int centerRow, int radius, GameMap map) {
         super(centerCol * GameMap.TILE_SIZE,
@@ -76,29 +75,6 @@ public class Explosion extends Entity {
                 }
             }
         }
-    }
-
-    private static BufferedImage loadExplosionSprite() {
-        String fileName = "explosion.png";
-        try {
-            var url = Explosion.class.getResource("/assets/images/" + fileName);
-            if (url != null) return ImageIO.read(url);
-        } catch (Exception ignored) {}
-
-        String[] paths = {
-            "assets/images/" + fileName,
-            "BTL/Project-OOP-Bomberman/assets/images/" + fileName,
-            "Project-OOP-Bomberman/assets/images/" + fileName
-        };
-        for (String p : paths) {
-            File f = new File(p);
-            if (f.exists()) {
-                try {
-                    return ImageIO.read(f);
-                } catch (Exception ignored) {}
-            }
-        }
-        return null;
     }
 
     @Override

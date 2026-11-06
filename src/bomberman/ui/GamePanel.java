@@ -1,13 +1,15 @@
-package bomberman.gui;
+package bomberman.ui;
 
-import bomberman.entities.Ballom;
-import bomberman.entities.Bomb;
-import bomberman.entities.Enemy;
-import bomberman.entities.Explosion;
-import bomberman.entities.Player;
-import bomberman.data.SaveManager;
-import bomberman.data.GameSaveData;
-import bomberman.data.MapData;
+import bomberman.component.GameState;
+import bomberman.model.Ballom;
+import bomberman.model.Bomb;
+import bomberman.model.Enemy;
+import bomberman.model.Explosion;
+import bomberman.model.GameMap;
+import bomberman.model.MapData;
+import bomberman.model.Player;
+import bomberman.util.GameSaveData;
+import bomberman.util.SaveManager;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -188,7 +190,8 @@ public class GamePanel extends JPanel {
      */
     public void triggerGameOver() {
         player.stopMoving();
-        SaveManager.saveProgress(1, 0, 3, highScore);
+        // Hết mạng -> lưu điểm kỷ lục, kết thúc ván chơi dở dang (ongoing = false)
+        SaveManager.saveProgress(1, 0, 3, highScore, false);
         this.state = GameState.GAME_OVER;
         setCursor(Cursor.getDefaultCursor());
     }
@@ -203,13 +206,62 @@ public class GamePanel extends JPanel {
         if (score > highScore) {
             highScore = score;
         }
-        SaveManager.saveProgress(level, score, lives, highScore);
+
+        boolean isFinal = (level >= MapData.LEVEL_COUNT);
+        // Nếu đã hoàn thành màn cuối -> ongoing = false; nếu chưa thì ongoing = true
+        SaveManager.saveProgress(level, score, lives, highScore, !isFinal);
+
         this.state = GameState.VICTORY;
         setCursor(Cursor.getDefaultCursor());
     }
 
     /**
-     * Bắt đầu màn chơi được chọn (Level 1, 2, 3...)
+     * Tiếp tục ván chơi dở dang từ file lưu (Continue Game)
+     */
+    public void continueSavedGame() {
+        GameSaveData data = SaveManager.loadProgress();
+        this.level = Math.max(1, data.getLevel());
+        this.score = Math.max(0, data.getScore());
+        this.lives = data.getLives() > 0 ? data.getLives() : 3;
+        this.highScore = data.getHighScore();
+
+        map.loadLevel(this.level);
+        bombs.clear();
+        explosions.clear();
+        player.reset(getPlayerSpawnX(), getPlayerSpawnY());
+        spawnEnemies(2 + this.level);
+        this.state = GameState.PLAYING;
+        setCursor(Cursor.getDefaultCursor());
+        System.out.println("[GamePanel] Tiếp tục chơi: Màn " + this.level + " | Điểm: " + this.score + " | Mạng: " + this.lives);
+    }
+
+    /**
+     * Mở màn hình chọn màn để bắt đầu ván mới hoàn toàn
+     */
+    public void startNewGame() {
+        setState(GameState.LEVEL_SELECT);
+    }
+
+    /**
+     * Bắt đầu một màn chơi mới từ đầu (reset điểm về 0, mạng về 3)
+     */
+    public void startLevelFromBeginning(int chosenLevel) {
+        this.level = chosenLevel;
+        this.score = 0;
+        this.lives = 3;
+        map.loadLevel(chosenLevel);
+        bombs.clear();
+        explosions.clear();
+        player.reset(getPlayerSpawnX(), getPlayerSpawnY());
+        spawnEnemies(2 + chosenLevel);
+        // Lưu tiến trình bắt đầu
+        SaveManager.saveProgress(chosenLevel, 0, 3, highScore, true);
+        this.state = GameState.PLAYING;
+        setCursor(Cursor.getDefaultCursor());
+    }
+
+    /**
+     * Bắt đầu màn chơi được chọn (giữ nguyên điểm và mạng hiện có)
      */
     public void startLevel(int chosenLevel) {
         this.level = chosenLevel;
@@ -227,7 +279,16 @@ public class GamePanel extends JPanel {
      */
     public void nextLevel() {
         if (level < MapData.LEVEL_COUNT) {
-            startLevel(level + 1);
+            this.level++;
+            map.loadLevel(this.level);
+            bombs.clear();
+            explosions.clear();
+            player.reset(getPlayerSpawnX(), getPlayerSpawnY());
+            spawnEnemies(2 + this.level);
+            // Lưu ngay khi vừa bước sang màn mới
+            SaveManager.saveProgress(level, score, lives, highScore, true);
+            this.state = GameState.PLAYING;
+            setCursor(Cursor.getDefaultCursor());
         } else {
             restartGame();
         }
@@ -244,9 +305,7 @@ public class GamePanel extends JPanel {
      * Chơi lại game từ Màn 1 (reset mạng và điểm)
      */
     public void restartGame() {
-        this.lives = 3;
-        this.score = 0;
-        startLevel(1);
+        startLevelFromBeginning(1);
     }
 
     /**
@@ -456,7 +515,7 @@ public class GamePanel extends JPanel {
 
     // Các phương thức chuyển trạng thái Game
     public void startGame() {
-        startLevel(1);
+        startLevelFromBeginning(1);
     }
 
     public void resumeGame() {
@@ -468,9 +527,29 @@ public class GamePanel extends JPanel {
         player.stopMoving();
         bombs.clear();
         explosions.clear();
-        SaveManager.saveProgress(level, score, lives, highScore);
+        // Thoát ra menu khi chưa xong ván -> lưu lại tiến trình dở dang
+        SaveManager.saveProgress(level, score, lives, highScore, true);
         this.state = GameState.MENU;
         setCursor(Cursor.getDefaultCursor());
+    }
+
+    /**
+     * Tự động lưu tiến trình khi người dùng tắt cửa sổ ứng dụng
+     */
+    public void onWindowClosing() {
+        if (state == GameState.PLAYING || state == GameState.PAUSED) {
+            player.stopMoving();
+            SaveManager.saveProgress(level, score, lives, highScore, true);
+            System.out.println("[GamePanel] Đã tự động lưu ván chơi dở dang trước khi thoát.");
+        }
+    }
+
+    /**
+     * Xử lý khi bấm nút Thoát Game trong Menu
+     */
+    public void onExitGame() {
+        onWindowClosing();
+        System.exit(0);
     }
 
     public void setState(GameState state) {

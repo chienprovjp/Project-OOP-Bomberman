@@ -1,4 +1,4 @@
-package bomberman.entities;
+package bomberman.component;
 
 import java.awt.Graphics;
 import java.awt.Rectangle;

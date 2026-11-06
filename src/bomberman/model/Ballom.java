@@ -1,12 +1,10 @@
-package bomberman.entities;
+package bomberman.model;
 
-import bomberman.gui.GameMap;
+import bomberman.util.ResourceLoader;
 
-import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -19,7 +17,7 @@ public class Ballom extends Enemy {
     private int deathAnimation = 0;
 
     // Ảnh kẻ địch Ballom
-    private static BufferedImage sprite = loadBallomSprite();
+    private static BufferedImage sprite = ResourceLoader.loadImage("ballom.png");
 
     public Ballom(int startX, int startY) {
         super(startX, startY,
@@ -27,29 +25,6 @@ public class Ballom extends Enemy {
               (int) (GameMap.TILE_SIZE * 0.70),
               2);
         this.scoreReward = 100;
-    }
-
-    private static BufferedImage loadBallomSprite() {
-        String fileName = "ballom.png";
-        try {
-            var url = Ballom.class.getResource("/assets/images/" + fileName);
-            if (url != null) return ImageIO.read(url);
-        } catch (Exception ignored) {}
-
-        String[] paths = {
-            "assets/images/" + fileName,
-            "BTL/Project-OOP-Bomberman/assets/images/" + fileName,
-            "Project-OOP-Bomberman/assets/images/" + fileName
-        };
-        for (String p : paths) {
-            File f = new File(p);
-            if (f.exists()) {
-                try {
-                    return ImageIO.read(f);
-                } catch (Exception ignored) {}
-            }
-        }
-        return null;
     }
 
     @Override

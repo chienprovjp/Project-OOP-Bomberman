@@ -1,4 +1,4 @@
-package bomberman.data;
+package bomberman.model;
 
 import java.io.BufferedReader;
 import java.io.File;

@@ -1,12 +1,10 @@
-package bomberman.gui;
+package bomberman.model;
 
-import bomberman.data.MapData;
+import bomberman.util.ResourceLoader;
 
-import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
-import java.io.File;
 
 public class GameMap {
     // Kích thước ô tile chuẩn: 48px 
@@ -36,34 +34,9 @@ public class GameMap {
     }
 
     private void loadImages() {
-        grassImage = loadImage("/assets/images/grass.png");
-        wallImage  = loadImage("/assets/images/wall.png");
-        brickImage = loadImage("/assets/images/brick.png");
-    }
-
-    private BufferedImage loadImage(String path) {
-        try {
-            var url = getClass().getResource(path);
-            if (url != null) return ImageIO.read(url);
-        } catch (Exception ignored) {}
-
-        String cleanPath = path.startsWith("/") ? path.substring(1) : path;
-        String[] possiblePaths = {
-            cleanPath,
-            "BTL/Project-OOP-Bomberman/" + cleanPath,
-            "Project-OOP-Bomberman/" + cleanPath
-        };
-
-        for (String p : possiblePaths) {
-            File file = new File(p);
-            if (file.exists()) {
-                try {
-                    return ImageIO.read(file);
-                } catch (Exception ignored) {}
-            }
-        }
-
-        return null;
+        grassImage = ResourceLoader.loadImage("grass.png");
+        wallImage  = ResourceLoader.loadImage("wall.png");
+        brickImage = ResourceLoader.loadImage("brick.png");
     }
 
     /**
