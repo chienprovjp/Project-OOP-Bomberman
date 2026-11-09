@@ -27,6 +27,7 @@ public class Player extends Entity {
     }
 
     private Direction direction = Direction.DOWN;
+    private Direction lastDirection = Direction.DOWN;
 
     // Sprite hình ảnh 4 hướng
     private BufferedImage spriteDown;
@@ -89,30 +90,75 @@ public class Player extends Entity {
         move(map, null);
     }
 
-    // Di chuyển và xử lý va chạm với bản đồ và bom
+    // Di chuyển và căn tim đường tự động, hỗ trợ bo góc mượt mà
     public void move(GameMap map, List<Bomb> bombs) {
-        int dx = 0;
-        int dy = 0;
+        Direction primaryDir = null;
+        Direction secondaryDir = null;
 
-        if (isMovingUp)    dy -= speed;
-        if (isMovingDown)  dy += speed;
-        if (isMovingLeft)  dx -= speed;
-        if (isMovingRight) dx += speed;
+        boolean verticalPressed = isMovingUp || isMovingDown;
+        boolean horizontalPressed = isMovingLeft || isMovingRight;
 
-        if (isMovingUp) direction = Direction.UP;
-        else if (isMovingDown) direction = Direction.DOWN;
-        else if (isMovingLeft) direction = Direction.LEFT;
-        else if (isMovingRight) direction = Direction.RIGHT;
-
-        // Tách trục X và Y để nhân vật trượt mượt khi bo góc
-        if (dx != 0 && !map.checkCollision(x + dx, y, width, height)
-                && !checkBombCollision(x + dx, y, width, height, bombs)) {
-            x += dx;
+        if (verticalPressed && horizontalPressed) {
+            // Khi nhấn cả 2 trục, ưu tiên hướng vừa nhấn sau cùng
+            if (lastDirection == Direction.UP || lastDirection == Direction.DOWN) {
+                primaryDir = isMovingUp ? Direction.UP : Direction.DOWN;
+                secondaryDir = isMovingLeft ? Direction.LEFT : Direction.RIGHT;
+            } else {
+                primaryDir = isMovingLeft ? Direction.LEFT : Direction.RIGHT;
+                secondaryDir = isMovingUp ? Direction.UP : Direction.DOWN;
+            }
+        } else if (verticalPressed) {
+            primaryDir = isMovingUp ? Direction.UP : Direction.DOWN;
+        } else if (horizontalPressed) {
+            primaryDir = isMovingLeft ? Direction.LEFT : Direction.RIGHT;
         }
-        if (dy != 0 && !map.checkCollision(x, y + dy, width, height)
-                && !checkBombCollision(x, y + dy, width, height, bombs)) {
-            y += dy;
+
+        if (primaryDir == null) return;
+
+        direction = primaryDir;
+
+        // Thử đi theo hướng ưu tiên, nếu bị kẹt tường thì chuyển sang hướng phụ còn lại
+        if (!tryMove(primaryDir, map, bombs) && secondaryDir != null) {
+            if (tryMove(secondaryDir, map, bombs)) {
+                direction = secondaryDir;
+            }
         }
+    }
+
+    // Thực hiện di chuyển theo 1 hướng và tự căn tim đường theo trục vuông góc
+    private boolean tryMove(Direction dir, GameMap map, List<Bomb> bombs) {
+        int tileSize = GameMap.TILE_SIZE;
+
+        if (dir == Direction.UP || dir == Direction.DOWN) {
+            // Khi đi dọc (trục Y), tự động căn tim đường theo trục ngang (X)
+            int alignedX = alignToCenter(x, width, tileSize, speed);
+            if (alignedX != x && !map.checkCollision(alignedX, y, width, height)
+                    && !checkBombCollision(alignedX, y, width, height, bombs)) {
+                x = alignedX;
+            }
+
+            int dy = (dir == Direction.UP) ? -speed : speed;
+            if (!map.checkCollision(x, y + dy, width, height)
+                    && !checkBombCollision(x, y + dy, width, height, bombs)) {
+                y += dy;
+                return true;
+            }
+        } else if (dir == Direction.LEFT || dir == Direction.RIGHT) {
+            // Khi đi ngang (trục X), tự động căn tim đường theo trục dọc (Y)
+            int alignedY = alignToCenter(y, height, tileSize, speed);
+            if (alignedY != y && !map.checkCollision(x, alignedY, width, height)
+                    && !checkBombCollision(x, alignedY, width, height, bombs)) {
+                y = alignedY;
+            }
+
+            int dx = (dir == Direction.LEFT) ? -speed : speed;
+            if (!map.checkCollision(x + dx, y, width, height)
+                    && !checkBombCollision(x + dx, y, width, height, bombs)) {
+                x += dx;
+                return true;
+            }
+        }
+        return false;
     }
 
     // Kiểm tra va chạm với bom (chỉ cản khi người chơi đã bước hẳn ra ngoài ô bom)
@@ -171,10 +217,22 @@ public class Player extends Entity {
 
     public void handleKeyPressed(KeyEvent e) {
         int keyCode = e.getKeyCode();
-        if (keyCode == KeyEvent.VK_W || keyCode == KeyEvent.VK_UP) isMovingUp = true;
-        if (keyCode == KeyEvent.VK_S || keyCode == KeyEvent.VK_DOWN) isMovingDown = true;
-        if (keyCode == KeyEvent.VK_A || keyCode == KeyEvent.VK_LEFT) isMovingLeft = true;
-        if (keyCode == KeyEvent.VK_D || keyCode == KeyEvent.VK_RIGHT) isMovingRight = true;
+        if (keyCode == KeyEvent.VK_W || keyCode == KeyEvent.VK_UP) {
+            isMovingUp = true;
+            lastDirection = Direction.UP;
+        }
+        if (keyCode == KeyEvent.VK_S || keyCode == KeyEvent.VK_DOWN) {
+            isMovingDown = true;
+            lastDirection = Direction.DOWN;
+        }
+        if (keyCode == KeyEvent.VK_A || keyCode == KeyEvent.VK_LEFT) {
+            isMovingLeft = true;
+            lastDirection = Direction.LEFT;
+        }
+        if (keyCode == KeyEvent.VK_D || keyCode == KeyEvent.VK_RIGHT) {
+            isMovingRight = true;
+            lastDirection = Direction.RIGHT;
+        }
     }
 
     public void handleKeyReleased(KeyEvent e) {
@@ -190,6 +248,7 @@ public class Player extends Entity {
         this.y = startY;
         stopMoving();
         this.direction = Direction.DOWN;
+        this.lastDirection = Direction.DOWN;
     }
 
     public void stopMoving() {

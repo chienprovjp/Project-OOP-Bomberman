@@ -12,11 +12,12 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Kẻ địch Ballom: quái vật quả bóng cam di chuyển và tự đổi hướng khi gặp vật cản.
+ * Kẻ địch Ballom: quái vật quả bóng cam di chuyển bám tim đường và tự đổi hướng khi gặp vật cản.
  */
 public class Ballom extends Enemy {
     private int animationTick = 0;
     private int deathAnimation = 0;
+    private int turnCooldown = 0; // Cooldown tránh rẽ liên tục tại cùng một giao lộ
 
     // Ảnh kẻ địch Ballom
     private static BufferedImage sprite = loadBallomSprite();
@@ -53,6 +54,9 @@ public class Ballom extends Enemy {
     @Override
     public void update() {
         animationTick++;
+        if (turnCooldown > 0) {
+            turnCooldown--;
+        }
         if (!alive) {
             deathAnimation++;
         }
@@ -62,34 +66,88 @@ public class Ballom extends Enemy {
     public void move(GameMap map, List<Bomb> bombs) {
         if (!alive) return;
 
-        // Tính độ dời theo hướng đang đi
-        int dx = 0;
-        int dy = 0;
-        switch (direction) {
-            case UP    -> dy = -speed;
-            case DOWN  -> dy = speed;
-            case LEFT  -> dx = -speed;
-            case RIGHT -> dx = speed;
-        }
+        int tileSize = GameMap.TILE_SIZE;
+        boolean moved = false;
 
-        // Kiểm tra va chạm với bản đồ và bom
-        boolean willCollide = map.checkCollision(x + dx, y + dy, width, height)
-                || checkBombCollision(x + dx, y + dy, bombs);
+        // Căn tim đường tự động theo trục vuông góc và di chuyển
+        if (direction == Player.Direction.UP || direction == Player.Direction.DOWN) {
+            x = alignToCenter(x, width, tileSize, speed);
 
-        if (!willCollide) {
-            x += dx;
-            y += dy;
-            // Xác suất ~2% tự đổi hướng tại ngã rẽ
-            if (random.nextInt(100) < 2) {
-                tryChangeToAvailableDirection(map, bombs);
+            int dy = (direction == Player.Direction.UP) ? -speed : speed;
+            if (!map.checkCollision(x, y + dy, width, height) && !checkBombCollision(x, y + dy, bombs)) {
+                y += dy;
+                moved = true;
             }
         } else {
-            // Gặp vật cản -> rẽ sang hướng thông thoáng
+            y = alignToCenter(y, height, tileSize, speed);
+
+            int dx = (direction == Player.Direction.LEFT) ? -speed : speed;
+            if (!map.checkCollision(x + dx, y, width, height) && !checkBombCollision(x + dx, y, bombs)) {
+                x += dx;
+                moved = true;
+            }
+        }
+
+        if (moved) {
+            // Khi tới đúng tâm giao lộ và hết cooldown, có tỉ lệ rẽ sang nhánh đường khác
+            if (turnCooldown == 0 && isAtTileCenter(tileSize) && random.nextInt(100) < 30) {
+                tryTurnAtIntersection(map, bombs);
+            }
+        } else {
+            // Gặp vật cản (tường hoặc bom) -> bắt buộc đổi hướng
             tryChangeToAvailableDirection(map, bombs);
         }
     }
 
-    // Tìm các hướng đi không bị cản để rẽ
+    // Kiểm tra Ballom có đang ở gần tâm của ô hiện tại trên trục đang di chuyển không
+    private boolean isAtTileCenter(int tileSize) {
+        if (direction == Player.Direction.UP || direction == Player.Direction.DOWN) {
+            int row = (y + height / 2) / tileSize;
+            int targetY = row * tileSize + (tileSize - height) / 2;
+            return Math.abs(y - targetY) <= speed;
+        } else {
+            int col = (x + width / 2) / tileSize;
+            int targetX = col * tileSize + (tileSize - width) / 2;
+            return Math.abs(x - targetX) <= speed;
+        }
+    }
+
+    // Thử rẽ sang nhánh vuông góc tại giao lộ (ngã 3, ngã 4)
+    private void tryTurnAtIntersection(GameMap map, List<Bomb> bombs) {
+        List<Player.Direction> perpendicularDirs = new ArrayList<>();
+
+        if (direction == Player.Direction.UP || direction == Player.Direction.DOWN) {
+            perpendicularDirs.add(Player.Direction.LEFT);
+            perpendicularDirs.add(Player.Direction.RIGHT);
+        } else {
+            perpendicularDirs.add(Player.Direction.UP);
+            perpendicularDirs.add(Player.Direction.DOWN);
+        }
+
+        List<Player.Direction> available = new ArrayList<>();
+        for (Player.Direction dir : perpendicularDirs) {
+            int testDx = 0;
+            int testDy = 0;
+            switch (dir) {
+                case UP    -> testDy = -speed;
+                case DOWN  -> testDy = speed;
+                case LEFT  -> testDx = -speed;
+                case RIGHT -> testDx = speed;
+            }
+            if (!map.checkCollision(x + testDx, y + testDy, width, height)
+                    && !checkBombCollision(x + testDx, y + testDy, bombs)) {
+                available.add(dir);
+            }
+        }
+
+        if (!available.isEmpty()) {
+            Collections.shuffle(available);
+            this.direction = available.get(0);
+            this.turnCooldown = 20;
+        }
+    }
+
+    // Tìm các hướng đi không bị cản để rẽ khi gặp vật cản
     private void tryChangeToAvailableDirection(GameMap map, List<Bomb> bombs) {
         List<Player.Direction> candidates = new ArrayList<>();
 
@@ -114,6 +172,7 @@ public class Ballom extends Enemy {
         if (!candidates.isEmpty()) {
             Collections.shuffle(candidates);
             this.direction = candidates.get(0);
+            this.turnCooldown = 20;
         } else {
             // Ngõ cụt: quay đầu 180 độ
             this.direction = switch (this.direction) {
@@ -122,6 +181,7 @@ public class Ballom extends Enemy {
                 case LEFT  -> Player.Direction.RIGHT;
                 case RIGHT -> Player.Direction.LEFT;
             };
+            this.turnCooldown = 20;
         }
     }
 

@@ -33,6 +33,24 @@ public abstract class Entity {
         return this.getBounds().intersects(other.getBounds());
     }
 
+    /**
+     * Căn chỉnh tọa độ vào tâm ô gạch (tim đường) theo trục vuông góc.
+     * Giúp thực thể trượt mượt qua góc cua và loại bỏ hiện tượng lắc lư tự do trong ô.
+     */
+    protected int alignToCenter(int currentPos, int currentSize, int tileSize, int stepSpeed) {
+        int tile = (currentPos + currentSize / 2) / tileSize;
+        int targetCenter = tile * tileSize + (tileSize - currentSize) / 2;
+        int diff = targetCenter - currentPos;
+
+        if (Math.abs(diff) <= stepSpeed) {
+            return targetCenter;
+        } else if (diff > 0) {
+            return currentPos + stepSpeed;
+        } else {
+            return currentPos - stepSpeed;
+        }
+    }
+
     public int getX() { return x; }
     public void setX(int x) { this.x = x; }
     public int getY() { return y; }
