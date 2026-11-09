@@ -23,8 +23,8 @@ public class Ballom extends Enemy {
     private static BufferedImage sprite = loadBallomSprite();
 
     public Ballom(int startX, int startY) {
-        // Hitbox 30x30 cân đối với Player và ô gạch
-        super(startX, startY, 30, 30, 2);
+        // Hitbox 44x44 gần kín ô gạch 48x48 (chỉ hở 2px mỗi bên), triệt tiêu lắc lư
+        super(startX, startY, 44, 44, 2);
         this.scoreReward = 100;
     }
 
@@ -134,8 +134,19 @@ public class Ballom extends Enemy {
                 case LEFT  -> testDx = -speed;
                 case RIGHT -> testDx = speed;
             }
-            if (!map.checkCollision(x + testDx, y + testDy, width, height)
-                    && !checkBombCollision(x + testDx, y + testDy, bombs)) {
+
+            int testX = x;
+            int testY = y;
+            if (dir == Player.Direction.UP || dir == Player.Direction.DOWN) {
+                int col = (x + width / 2) / GameMap.TILE_SIZE;
+                testX = col * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - width) / 2;
+            } else {
+                int row = (y + height / 2) / GameMap.TILE_SIZE;
+                testY = row * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - height) / 2;
+            }
+
+            if (!map.checkCollision(testX + testDx, testY + testDy, width, height)
+                    && !checkBombCollision(testX + testDx, testY + testDy, bombs)) {
                 available.add(dir);
             }
         }
@@ -143,6 +154,13 @@ public class Ballom extends Enemy {
         if (!available.isEmpty()) {
             Collections.shuffle(available);
             this.direction = available.get(0);
+            if (this.direction == Player.Direction.UP || this.direction == Player.Direction.DOWN) {
+                int col = (x + width / 2) / GameMap.TILE_SIZE;
+                this.x = col * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - width) / 2;
+            } else {
+                int row = (y + height / 2) / GameMap.TILE_SIZE;
+                this.y = row * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - height) / 2;
+            }
             this.turnCooldown = 20;
         }
     }
@@ -163,8 +181,18 @@ public class Ballom extends Enemy {
                 case RIGHT -> testDx = speed;
             }
 
-            if (!map.checkCollision(x + testDx, y + testDy, width, height)
-                    && !checkBombCollision(x + testDx, y + testDy, bombs)) {
+            int testX = x;
+            int testY = y;
+            if (dir == Player.Direction.UP || dir == Player.Direction.DOWN) {
+                int col = (x + width / 2) / GameMap.TILE_SIZE;
+                testX = col * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - width) / 2;
+            } else {
+                int row = (y + height / 2) / GameMap.TILE_SIZE;
+                testY = row * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - height) / 2;
+            }
+
+            if (!map.checkCollision(testX + testDx, testY + testDy, width, height)
+                    && !checkBombCollision(testX + testDx, testY + testDy, bombs)) {
                 candidates.add(dir);
             }
         }
@@ -172,6 +200,13 @@ public class Ballom extends Enemy {
         if (!candidates.isEmpty()) {
             Collections.shuffle(candidates);
             this.direction = candidates.get(0);
+            if (this.direction == Player.Direction.UP || this.direction == Player.Direction.DOWN) {
+                int col = (x + width / 2) / GameMap.TILE_SIZE;
+                this.x = col * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - width) / 2;
+            } else {
+                int row = (y + height / 2) / GameMap.TILE_SIZE;
+                this.y = row * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - height) / 2;
+            }
             this.turnCooldown = 20;
         } else {
             // Ngõ cụt: quay đầu 180 độ
@@ -196,15 +231,15 @@ public class Ballom extends Enemy {
             return;
         }
 
-        // Kích thước hiển thị 42x42 (kèm nhịp phập phồng nhẹ), căn giữa hitbox 30x30
+        // Kích thước hiển thị 44x44 (kèm nhịp phập phồng nhẹ), vừa khít hitbox 44x44
         int pulse = (animationTick / 10) % 2 == 0 ? 1 : 0;
-        int spriteW = 42 + pulse;
-        int spriteH = 42 - pulse;
+        int spriteW = 44 + pulse;
+        int spriteH = 44 - pulse;
         int drawX = x - (spriteW - width) / 2;
         int drawY = y - (spriteH - height) / 2;
 
         if (sprite != null) {
-            // Vẽ ảnh ballom.png chuẩn kích thước 42x42
+            // Vẽ ảnh ballom.png chuẩn kích thước 44x44
             g.drawImage(sprite, drawX, drawY, spriteW, spriteH, null);
         } else {
             // Vẽ dự phòng nếu thiếu ảnh

@@ -263,7 +263,7 @@ public class GamePanel extends JPanel {
                 if (map.getTile(r, c) == GameMap.GRASS) {
                     int distFromSpawn = Math.abs(r - 1) + Math.abs(c - 1);
                     if (distFromSpawn >= 4) {
-                        int enemySize = 30;
+                        int enemySize = 44;
                         int spawnX = c * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - enemySize) / 2;
                         int spawnY = r * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - enemySize) / 2;
                         enemies.add(new Ballom(spawnX, spawnY));
