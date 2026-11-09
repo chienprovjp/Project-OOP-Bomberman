@@ -35,7 +35,8 @@ public class Player extends Entity {
     private BufferedImage spriteRight;
 
     public Player(int startX, int startY) {
-        super(startX, startY, (int) (GameMap.TILE_SIZE * 0.72), (int) (GameMap.TILE_SIZE * 0.72));
+        // Khung va chạm (hitbox) 30x30 giúp luồn lách mượt mà qua các ngõ 1 ô
+        super(startX, startY, 30, 30);
         loadSprites();
     }
 
@@ -138,15 +139,17 @@ public class Player extends Entity {
             case RIGHT -> spriteRight;
         };
 
-        int drawX = x - (GameMap.TILE_SIZE - width) / 2;
-        int drawY = y - (GameMap.TILE_SIZE - height) / 2;
+        // Kích thước hiển thị 42x42, căn giữa hitbox 30x30
+        int spriteSize = 42;
+        int drawX = x - (spriteSize - width) / 2;
+        int drawY = y - (spriteSize - height) / 2;
 
         // Bóng mờ
         g.setColor(new Color(0, 0, 0, 70));
         g.fillOval(x + 2, y + height - 4, width - 4, 6);
 
         if (activeSprite != null) {
-            g.drawImage(activeSprite, drawX, drawY, GameMap.TILE_SIZE, GameMap.TILE_SIZE, null);
+            g.drawImage(activeSprite, drawX, drawY, spriteSize, spriteSize, null);
         } else {
             drawFallback(g);
         }

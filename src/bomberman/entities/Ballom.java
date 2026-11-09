@@ -22,10 +22,8 @@ public class Ballom extends Enemy {
     private static BufferedImage sprite = loadBallomSprite();
 
     public Ballom(int startX, int startY) {
-        super(startX, startY,
-              (int) (GameMap.TILE_SIZE * 0.70),
-              (int) (GameMap.TILE_SIZE * 0.70),
-              2);
+        // Hitbox 30x30 cân đối với Player và ô gạch
+        super(startX, startY, 30, 30, 2);
         this.scoreReward = 100;
     }
 
@@ -138,27 +136,28 @@ public class Ballom extends Enemy {
             return;
         }
 
+        // Kích thước hiển thị 42x42 (kèm nhịp phập phồng nhẹ), căn giữa hitbox 30x30
         int pulse = (animationTick / 10) % 2 == 0 ? 1 : 0;
-        int bodyW = width + pulse;
-        int bodyH = height - pulse;
-        int bodyX = x - pulse / 2;
-        int bodyY = y + pulse;
+        int spriteW = 42 + pulse;
+        int spriteH = 42 - pulse;
+        int drawX = x - (spriteW - width) / 2;
+        int drawY = y - (spriteH - height) / 2;
 
         if (sprite != null) {
-            // Vẽ ảnh ballom.png
-            g.drawImage(sprite, bodyX, bodyY, bodyW, bodyH, null);
+            // Vẽ ảnh ballom.png chuẩn kích thước 42x42
+            g.drawImage(sprite, drawX, drawY, spriteW, spriteH, null);
         } else {
             // Vẽ dự phòng nếu thiếu ảnh
             g.setColor(new Color(0, 0, 0, 50));
             g.fillOval(x + 2, y + height - 3, width - 4, 6);
 
             g.setColor(new Color(249, 115, 22));
-            g.fillOval(bodyX, bodyY, bodyW, bodyH);
+            g.fillOval(drawX, drawY, spriteW, spriteH);
             g.setColor(new Color(194, 65, 12));
-            g.drawOval(bodyX, bodyY, bodyW, bodyH);
+            g.drawOval(drawX, drawY, spriteW, spriteH);
 
             g.setColor(new Color(255, 255, 255, 140));
-            g.fillOval(bodyX + bodyW / 4, bodyY + 4, bodyW / 3, bodyH / 4);
+            g.fillOval(drawX + spriteW / 4, drawY + 4, spriteW / 3, spriteH / 4);
 
             int eyeOffsetX = switch (direction) {
                 case LEFT  -> -3;
@@ -171,9 +170,9 @@ public class Ballom extends Enemy {
                 default    -> 0;
             };
 
-            int eye1X = bodyX + bodyW / 2 - 8 + eyeOffsetX;
-            int eye2X = bodyX + bodyW / 2 + 2 + eyeOffsetX;
-            int eyeY  = bodyY + bodyH / 3 + eyeOffsetY;
+            int eye1X = drawX + spriteW / 2 - 8 + eyeOffsetX;
+            int eye2X = drawX + spriteW / 2 + 2 + eyeOffsetX;
+            int eyeY  = drawY + spriteH / 3 + eyeOffsetY;
 
             g.setColor(Color.WHITE);
             g.fillOval(eye1X, eyeY, 6, 8);
@@ -184,7 +183,7 @@ public class Ballom extends Enemy {
             g.fillOval(eye2X + 2 + eyeOffsetX / 2, eyeY + 2 + eyeOffsetY / 2, 3, 4);
 
             g.setColor(new Color(124, 45, 18));
-            g.drawArc(bodyX + bodyW / 2 - 4 + eyeOffsetX, bodyY + bodyH / 2 + 4, 8, 5, 0, -180);
+            g.drawArc(drawX + spriteW / 2 - 4 + eyeOffsetX, drawY + spriteH / 2 + 4, 8, 5, 0, -180);
         }
     }
 }
