@@ -145,24 +145,39 @@ public class Ballom extends Enemy {
         int bodyY = y + pulse;
 
         if (sprite != null) {
-            // Vẽ ảnh ballom.png
+            // Vẽ ảnh ballom.png chuẩn bạch tuộc cam
             g.drawImage(sprite, bodyX, bodyY, bodyW, bodyH, null);
         } else {
-            // Vẽ dự phòng nếu thiếu ảnh
+            // Vẽ dự phòng hình bạch tuộc cam nếu thiếu ảnh
             g.setColor(new Color(0, 0, 0, 50));
             g.fillOval(x + 2, y + height - 3, width - 4, 6);
 
-            g.setColor(new Color(249, 115, 22));
-            g.fillOval(bodyX, bodyY, bodyW, bodyH);
-            g.setColor(new Color(194, 65, 12));
-            g.drawOval(bodyX, bodyY, bodyW, bodyH);
+            // Chân xúc tu bên dưới
+            g.setColor(new Color(230, 92, 80));
+            g.fillOval(bodyX + 2, bodyY + bodyH - 6, 7, 7);
+            g.fillOval(bodyX + 8, bodyY + bodyH - 4, 7, 7);
+            g.fillOval(bodyX + bodyW - 15, bodyY + bodyH - 4, 7, 7);
+            g.fillOval(bodyX + bodyW - 9, bodyY + bodyH - 6, 7, 7);
 
-            g.setColor(new Color(255, 255, 255, 140));
-            g.fillOval(bodyX + bodyW / 4, bodyY + 4, bodyW / 3, bodyH / 4);
+            // Thân hình vòm san hô
+            g.setColor(new Color(230, 92, 80));
+            g.fillOval(bodyX, bodyY + 3, bodyW, bodyH - 5);
+            g.setColor(new Color(53, 34, 61));
+            g.drawOval(bodyX, bodyY + 3, bodyW, bodyH - 5);
 
+            // Cọng ăng-ten trên đỉnh
+            g.fillRect(bodyX + bodyW / 2 - 1, bodyY, 2, 4);
+
+            // Vùng sáng đầu
+            g.setColor(new Color(246, 138, 124));
+            g.fillOval(bodyX + 3, bodyY + 5, bodyW - 6, (bodyH - 5) / 2);
+            g.setColor(new Color(255, 255, 255, 160));
+            g.fillOval(bodyX + 6, bodyY + 6, 7, 4);
+
+            // Hướng nhìn mắt
             int eyeOffsetX = switch (direction) {
-                case LEFT  -> -3;
-                case RIGHT -> 3;
+                case LEFT  -> -2;
+                case RIGHT -> 2;
                 default    -> 0;
             };
             int eyeOffsetY = switch (direction) {
@@ -173,18 +188,24 @@ public class Ballom extends Enemy {
 
             int eye1X = bodyX + bodyW / 2 - 8 + eyeOffsetX;
             int eye2X = bodyX + bodyW / 2 + 2 + eyeOffsetX;
-            int eyeY  = bodyY + bodyH / 3 + eyeOffsetY;
+            int eyeY  = bodyY + bodyH / 3 + 1 + eyeOffsetY;
+
+            // Mắt dọc viền trắng
+            g.setColor(Color.WHITE);
+            g.fillOval(eye1X, eyeY, 6, 9);
+            g.fillOval(eye2X, eyeY, 6, 9);
+
+            g.setColor(new Color(26, 23, 39));
+            g.fillOval(eye1X + 1, eyeY + 1, 4, 7);
+            g.fillOval(eye2X + 1, eyeY + 1, 4, 7);
 
             g.setColor(Color.WHITE);
-            g.fillOval(eye1X, eyeY, 6, 8);
-            g.fillOval(eye2X, eyeY, 6, 8);
+            g.fillOval(eye1X + 2, eyeY + 2, 2, 3);
+            g.fillOval(eye2X + 2, eyeY + 2, 2, 3);
 
-            g.setColor(Color.BLACK);
-            g.fillOval(eye1X + 2 + eyeOffsetX / 2, eyeY + 2 + eyeOffsetY / 2, 3, 4);
-            g.fillOval(eye2X + 2 + eyeOffsetX / 2, eyeY + 2 + eyeOffsetY / 2, 3, 4);
-
-            g.setColor(new Color(124, 45, 18));
-            g.drawArc(bodyX + bodyW / 2 - 4 + eyeOffsetX, bodyY + bodyH / 2 + 4, 8, 5, 0, -180);
+            // Miệng
+            g.setColor(new Color(53, 34, 61));
+            g.fillRect(bodyX + bodyW / 2 - 3 + eyeOffsetX, bodyY + bodyH / 2 + 5, 6, 2);
         }
     }
 }
