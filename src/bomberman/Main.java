@@ -1,10 +1,12 @@
 package bomberman;
 
-import bomberman.gui.GamePanel;
+import bomberman.ui.GamePanel;
+import bomberman.util.ResourceLoader;
 
-import javax.imageio.ImageIO;
 import javax.swing.JFrame;
-import java.io.File;
+import java.awt.Image;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class Main {
     public static void main(String[] args) {
@@ -13,18 +15,28 @@ public class Main {
 
         // Nạp icon cho thanh tiêu đề cửa sổ nếu có ảnh
         try {
-            File iconFile = new File("assets/images/player.png");
-            if (!iconFile.exists()) {
-                iconFile = new File("assets/images/player_down.png");
+            Image icon = ResourceLoader.loadImage("player.png");
+            if (icon == null) {
+                icon = ResourceLoader.loadImage("player_down.png");
             }
-            if (iconFile.exists()) {
-                window.setIconImage(ImageIO.read(iconFile));
+            if (icon != null) {
+                window.setIconImage(icon);
             }
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
 
         window.add(gamePanel);
-        window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        
+        // Bắt sự kiện tắt cửa sổ để tự động lưu tiến trình dở dang
+        window.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        window.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                gamePanel.onWindowClosing();
+                window.dispose();
+                System.exit(0);
+            }
+        });
+
         window.setResizable(false);
         window.pack();
         window.setLocationRelativeTo(null);

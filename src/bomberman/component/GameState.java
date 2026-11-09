@@ -1,4 +1,4 @@
-package bomberman.gui;
+package bomberman.component;
 
 public enum GameState {
     MENU,

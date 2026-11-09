@@ -1,14 +1,12 @@
-package bomberman.entities;
+package bomberman.model;
 
-import bomberman.gui.GameMap;
+import bomberman.util.ResourceLoader;
 
-import javax.imageio.ImageIO;
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,7 +43,7 @@ public class BrickDebris {
     private int maxLife = 22; // Tồn tại ~0.35s
     private int life = maxLife;
 
-    private static BufferedImage brickSprite = loadBrickSprite();
+    private static BufferedImage brickSprite = ResourceLoader.loadImage("brick.png");
 
     public BrickDebris(int tileCol, int tileRow) {
         int tileSize = GameMap.TILE_SIZE;
@@ -70,29 +68,6 @@ public class BrickDebris {
         fragments.add(new Fragment(bx + halfTile, by, 2.2f, -3.2f, halfTile, halfTile, qTR));
         fragments.add(new Fragment(bx, by + halfTile, -1.8f, -1.5f, halfTile, halfTile, qBL));
         fragments.add(new Fragment(bx + halfTile, by + halfTile, 1.8f, -1.5f, halfTile, halfTile, qBR));
-    }
-
-    private static BufferedImage loadBrickSprite() {
-        String fileName = "brick.png";
-        try {
-            var url = BrickDebris.class.getResource("/assets/images/" + fileName);
-            if (url != null) return ImageIO.read(url);
-        } catch (Exception ignored) {}
-
-        String[] paths = {
-            "assets/images/" + fileName,
-            "BTL/Project-OOP-Bomberman/assets/images/" + fileName,
-            "Project-OOP-Bomberman/assets/images/" + fileName
-        };
-        for (String p : paths) {
-            File f = new File(p);
-            if (f.exists()) {
-                try {
-                    return ImageIO.read(f);
-                } catch (Exception ignored) {}
-            }
-        }
-        return null;
     }
 
     public void update() {

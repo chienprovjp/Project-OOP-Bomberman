@@ -1,14 +1,13 @@
-package bomberman.entities;
+package bomberman.model;
 
-import bomberman.gui.GameMap;
+import bomberman.component.Entity;
+import bomberman.util.ResourceLoader;
 
-import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.List;
 
 /**
@@ -42,45 +41,21 @@ public class Player extends Entity {
     }
 
     private void loadSprites() {
-        spriteDown = loadSingleSprite("player_down.png");
-        spriteUp = loadSingleSprite("player_up.png");
-        spriteLeft = loadSingleSprite("player_left.png");
-        spriteRight = loadSingleSprite("player_right.png");
+        spriteDown = ResourceLoader.loadImage("player_down.png");
+        spriteUp = ResourceLoader.loadImage("player_up.png");
+        spriteLeft = ResourceLoader.loadImage("player_left.png");
+        spriteRight = ResourceLoader.loadImage("player_right.png");
 
         // Dùng ảnh mặc định nếu thiếu sprite hướng
-        BufferedImage defaultSprite = loadSingleSprite("player.png");
+        BufferedImage defaultSprite = ResourceLoader.loadImage("player.png");
         if (defaultSprite == null) {
-            defaultSprite = loadSingleSprite("player1.png");
+            defaultSprite = ResourceLoader.loadImage("player1.png");
         }
 
         if (spriteDown == null) spriteDown = defaultSprite;
         if (spriteUp == null) spriteUp = defaultSprite;
         if (spriteLeft == null) spriteLeft = defaultSprite;
         if (spriteRight == null) spriteRight = defaultSprite;
-    }
-
-    private BufferedImage loadSingleSprite(String fileName) {
-        try {
-            var url = getClass().getResource("/assets/images/" + fileName);
-            if (url != null) return ImageIO.read(url);
-        } catch (Exception ignored) {}
-
-        String[] possiblePaths = {
-            "assets/images/" + fileName,
-            "BTL/Project-OOP-Bomberman/assets/images/" + fileName,
-            "Project-OOP-Bomberman/assets/images/" + fileName
-        };
-
-        for (String p : possiblePaths) {
-            File f = new File(p);
-            if (f.exists()) {
-                try {
-                    return ImageIO.read(f);
-                } catch (Exception ignored) {}
-            }
-        }
-
-        return null;
     }
 
     @Override

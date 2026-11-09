@@ -1,8 +1,12 @@
-package bomberman.gui;
+package bomberman.ui;
 
-import bomberman.data.MapData;
+import bomberman.component.GameState;
+import bomberman.model.GameMap;
+import bomberman.model.MapData;
+import bomberman.util.GameSaveData;
+import bomberman.util.ResourceLoader;
+import bomberman.util.SaveManager;
 
-import javax.imageio.ImageIO;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -14,12 +18,10 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.io.File;
 
 public class Menu {
     private int selectedIndex = 0;
     private int hoveredIndex = -1;
-    private final String[] menuOptions = { "CHƠI NGAY", "HƯỚNG DẪN", "THOÁT GAME" };
     private Rectangle[] menuBounds;
 
     // Trạng thái nút cho màn hình Hướng dẫn
@@ -63,45 +65,44 @@ public class Menu {
     }
 
     private void loadAssets() {
-        backgroundImage = loadMenuImage("assets/Background.png");
+        backgroundImage = ResourceLoader.loadImage("assets/Background.png");
         if (backgroundImage == null) {
-            backgroundImage = loadMenuImage("assets/background.png");
+            backgroundImage = ResourceLoader.loadImage("assets/background.png");
         }
 
-        backgroundLevelImage = loadMenuImage("assets/backgroundlevel.png");
+        backgroundLevelImage = ResourceLoader.loadImage("assets/backgroundlevel.png");
 
-        playButtonImage = loadMenuImage("assets/Buttons/Play.png");
+        playButtonImage = ResourceLoader.loadImage("assets/Buttons/Play.png");
         if (playButtonImage == null) {
-            playButtonImage = loadMenuImage("assets/Buttons/play.png");
+            playButtonImage = ResourceLoader.loadImage("assets/Buttons/play.png");
         }
 
-        playerIcon = loadMenuImage("assets/images/player_down.png");
+        playerIcon = ResourceLoader.loadImage("player_down.png");
         if (playerIcon == null) {
-            playerIcon = loadMenuImage("assets/images/player.png");
+            playerIcon = ResourceLoader.loadImage("player.png");
         }
     }
 
-    private BufferedImage loadMenuImage(String relativePath) {
-        try {
-            var url = getClass().getResource("/" + relativePath);
-            if (url != null) return ImageIO.read(url);
-        } catch (Exception ignored) {}
-
-        String[] possiblePaths = {
-            relativePath,
-            "BTL/Project-OOP-Bomberman/" + relativePath,
-            "Project-OOP-Bomberman/" + relativePath
-        };
-
-        for (String p : possiblePaths) {
-            File f = new File(p);
-            if (f.exists()) {
-                try {
-                    return ImageIO.read(f);
-                } catch (Exception ignored) {}
-            }
+    /**
+     * Lấy danh sách các tùy chọn Menu chính động:
+     * Nếu có bản lưu ván dở dang -> Hiện nút TIẾP TỤC [MÀN X] lên đầu.
+     */
+    public String[] getCurrentMenuOptions() {
+        if (SaveManager.hasOngoingGame()) {
+            GameSaveData data = SaveManager.loadProgress();
+            return new String[] {
+                "TIẾP TỤC [MÀN " + data.getLevel() + "]",
+                "CHƠI MỚI",
+                "HƯỚNG DẪN",
+                "THOÁT GAME"
+            };
+        } else {
+            return new String[] {
+                "CHƠI NGAY",
+                "HƯỚNG DẪN",
+                "THOÁT GAME"
+            };
         }
-        return null;
     }
 
     /**
@@ -112,22 +113,30 @@ public class Menu {
         if (height <= 0) height = GameMap.DEFAULT_ROWS * GameMap.TILE_SIZE;
 
         // --- 1. Menu chính ---
-        int btnW = (int) (width * 0.23);
-        if (btnW < 180) btnW = 180;
-        if (btnW > 240) btnW = 240;
+        String[] opts = getCurrentMenuOptions();
+        int optCount = opts.length;
+        boolean hasOngoing = (optCount == 4);
 
-        int playH = (int) (btnW * (265.0 / 940.0));
-        int subBtnH = Math.max(34, (int) (btnW * 0.17));
+        int btnW = (int) (width * 0.24);
+        if (btnW < 190) btnW = 190;
+        if (btnW > 250) btnW = 250;
+
+        int playH = (!hasOngoing) ? (int) (btnW * (265.0 / 940.0)) : Math.max(38, (int) (btnW * 0.18));
+        int subBtnH = Math.max(34, (int) (btnW * 0.16));
 
         int startX = (int) (width * 0.08);
-        int startY = (int) (height * 0.44);
+        int startY = hasOngoing ? (int) (height * 0.38) : (int) (height * 0.44);
 
-        if (menuBounds == null || menuBounds.length != menuOptions.length) {
-            menuBounds = new Rectangle[menuOptions.length];
+        if (menuBounds == null || menuBounds.length != optCount) {
+            menuBounds = new Rectangle[optCount];
         }
-        menuBounds[0] = new Rectangle(startX, startY, btnW, playH);
-        menuBounds[1] = new Rectangle(startX, startY + playH + 12, btnW, subBtnH);
-        menuBounds[2] = new Rectangle(startX, startY + playH + 12 + subBtnH + 10, btnW, subBtnH);
+
+        int currY = startY;
+        for (int i = 0; i < optCount; i++) {
+            int h = (i == 0 && !hasOngoing) ? playH : subBtnH;
+            menuBounds[i] = new Rectangle(startX, currY, btnW, h);
+            currY += h + (hasOngoing ? 10 : 12);
+        }
 
         // --- 2. Help Back ---
         int helpBtnW = Math.max(180, (int) (width * 0.2));
@@ -223,24 +232,49 @@ public class Menu {
             g2d.drawString("BOMBERMAN", (width - 250) / 2, 80);
         }
 
-        // Nút 0: Play
-        Rectangle playR = menuBounds[0];
-        boolean isPlayHovered = (hoveredIndex == 0 || selectedIndex == 0);
-        if (playButtonImage != null) {
-            if (isPlayHovered) {
-                g2d.setColor(new Color(250, 204, 21, 100));
-                g2d.fillRoundRect(playR.x - 4, playR.y - 4, playR.width + 8, playR.height + 8, 16, 16);
+        String[] opts = getCurrentMenuOptions();
+        boolean hasOngoing = (opts.length == 4);
+
+        for (int i = 0; i < opts.length; i++) {
+            Rectangle r = menuBounds[i];
+            boolean isHighlighted = (hoveredIndex == i || selectedIndex == i);
+
+            if (i == 0 && !hasOngoing && playButtonImage != null) {
+                if (isHighlighted) {
+                    g2d.setColor(new Color(250, 204, 21, 100));
+                    g2d.fillRoundRect(r.x - 4, r.y - 4, r.width + 8, r.height + 8, 16, 16);
+                }
+                g2d.drawImage(playButtonImage, r.x, r.y, r.width, r.height, null);
+            } else if (i == 0 && hasOngoing) {
+                // Nút TIẾP TỤC nổi bật
+                drawContinueButton(g2d, r, opts[i], isHighlighted);
+            } else {
+                drawMenuButton(g2d, r, opts[i], isHighlighted);
             }
-            g2d.drawImage(playButtonImage, playR.x, playR.y, playR.width, playR.height, null);
+        }
+    }
+
+    private void drawContinueButton(Graphics2D g2d, Rectangle r, String text, boolean isHighlighted) {
+        if (isHighlighted) {
+            g2d.setColor(new Color(22, 101, 52, 240));
+            g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+            g2d.setColor(new Color(74, 222, 128));
+            g2d.setStroke(new BasicStroke(2.5f));
+            g2d.drawRoundRect(r.x, r.y, r.width, r.height, 10, 10);
         } else {
-            drawMenuButton(g2d, playR, "CHƠI NGAY", isPlayHovered);
+            g2d.setColor(new Color(20, 83, 45, 200));
+            g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+            g2d.setColor(new Color(34, 197, 94));
+            g2d.setStroke(new BasicStroke(1.5f));
+            g2d.drawRoundRect(r.x, r.y, r.width, r.height, 10, 10);
         }
 
-        // Nút 1: Hướng dẫn
-        drawMenuButton(g2d, menuBounds[1], "HƯỚNG DẪN", (hoveredIndex == 1 || selectedIndex == 1));
-
-        // Nút 2: Thoát
-        drawMenuButton(g2d, menuBounds[2], "THOÁT GAME", (hoveredIndex == 2 || selectedIndex == 2));
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 13));
+        FontMetrics fm = g2d.getFontMetrics();
+        g2d.setColor(isHighlighted ? new Color(240, 253, 244) : Color.WHITE);
+        int tx = r.x + (r.width - fm.stringWidth(text)) / 2;
+        int ty = r.y + ((r.height - fm.getHeight()) / 2) + fm.getAscent();
+        g2d.drawString(text, tx, ty);
     }
 
     private void drawMenuButton(Graphics2D g2d, Rectangle r, String text, boolean isHighlighted) {
@@ -622,7 +656,9 @@ public class Menu {
         textY += lineGap;
         g2d.drawString("• TẠM DỪNG: Nhấn ESC để tạm dừng game hoặc mở menu lựa chọn.", px + 30, textY);
         textY += lineGap;
-        g2d.drawString("• HỒI SINH NHANH: Nhấn phím R trong ván để đưa nhân vật về điểm xuất phát.", px + 30, textY);
+        g2d.drawString("• LƯU TIẾN TRÌNH: Khi bấm ESC -> M hoặc tắt game, tiến trình được lưu tự động.", px + 30, textY);
+        textY += lineGap;
+        g2d.drawString("• TIẾP TỤC: Khi vào lại game, bấm 'TIẾP TỤC' để chơi tiếp màn và điểm đang dở.", px + 30, textY);
         textY += lineGap;
         g2d.drawString("• LUẬT CHƠI: Đặt bom phá gạch, tiêu diệt toàn bộ quái Ballom để qua màn.", px + 30, textY);
         textY += lineGap;
@@ -657,32 +693,37 @@ public class Menu {
     // --- MAIN MENU ---
     public void handleMenuMouseMove(int mx, int my, GamePanel panel) {
         hoveredIndex = -1;
-        for (int i = 0; i < menuBounds.length; i++) {
-            if (menuBounds[i].contains(mx, my)) {
-                hoveredIndex = i;
-                selectedIndex = i;
-                panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                return;
+        if (menuBounds != null) {
+            for (int i = 0; i < menuBounds.length; i++) {
+                if (menuBounds[i].contains(mx, my)) {
+                    hoveredIndex = i;
+                    selectedIndex = i;
+                    panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                    return;
+                }
             }
         }
         panel.setCursor(Cursor.getDefaultCursor());
     }
 
     public void handleMenuMouseClick(int mx, int my, GamePanel panel) {
-        for (int i = 0; i < menuBounds.length; i++) {
-            if (menuBounds[i].contains(mx, my)) {
-                executeMenuAction(i, panel);
-                return;
+        if (menuBounds != null) {
+            for (int i = 0; i < menuBounds.length; i++) {
+                if (menuBounds[i].contains(mx, my)) {
+                    executeMenuAction(i, panel);
+                    return;
+                }
             }
         }
     }
 
     public void handleMenuKeyPress(KeyEvent e, GamePanel panel) {
+        String[] opts = getCurrentMenuOptions();
         int code = e.getKeyCode();
         if (code == KeyEvent.VK_UP || code == KeyEvent.VK_W) {
-            selectedIndex = (selectedIndex - 1 + menuOptions.length) % menuOptions.length;
+            selectedIndex = (selectedIndex - 1 + opts.length) % opts.length;
         } else if (code == KeyEvent.VK_DOWN || code == KeyEvent.VK_S) {
-            selectedIndex = (selectedIndex + 1) % menuOptions.length;
+            selectedIndex = (selectedIndex + 1) % opts.length;
         } else if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_SPACE) {
             executeMenuAction(selectedIndex, panel);
         }
@@ -690,10 +731,20 @@ public class Menu {
 
     private void executeMenuAction(int index, GamePanel panel) {
         panel.setCursor(Cursor.getDefaultCursor());
-        switch (index) {
-            case 0 -> panel.setState(GameState.LEVEL_SELECT); // Mở chọn màn chơi
-            case 1 -> panel.setState(GameState.HELP);
-            case 2 -> System.exit(0);
+        String[] opts = getCurrentMenuOptions();
+        if (opts.length == 4) {
+            switch (index) {
+                case 0 -> panel.continueSavedGame(); // Tiếp tục ván chơi dở
+                case 1 -> panel.startNewGame();      // Chơi mới
+                case 2 -> panel.setState(GameState.HELP);
+                case 3 -> panel.onExitGame();
+            }
+        } else {
+            switch (index) {
+                case 0 -> panel.startNewGame();
+                case 1 -> panel.setState(GameState.HELP);
+                case 2 -> panel.onExitGame();
+            }
         }
     }
 
@@ -717,7 +768,7 @@ public class Menu {
                 if (i == levelOptions.length - 1) {
                     panel.setState(GameState.MENU);
                 } else {
-                    panel.startLevel(i + 1);
+                    panel.startLevelFromBeginning(i + 1);
                 }
                 return;
             }
@@ -729,11 +780,11 @@ public class Menu {
         if (code == KeyEvent.VK_ESCAPE) {
             panel.setState(GameState.MENU);
         } else if (code == KeyEvent.VK_1 || code == KeyEvent.VK_NUMPAD1) {
-            panel.startLevel(1);
+            panel.startLevelFromBeginning(1);
         } else if (code == KeyEvent.VK_2 || code == KeyEvent.VK_NUMPAD2) {
-            panel.startLevel(2);
+            panel.startLevelFromBeginning(2);
         } else if (code == KeyEvent.VK_3 || code == KeyEvent.VK_NUMPAD3) {
-            panel.startLevel(3);
+            panel.startLevelFromBeginning(3);
         }
     }
 

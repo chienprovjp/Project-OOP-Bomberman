@@ -1,6 +1,6 @@
-package bomberman.entities;
+package bomberman.model;
 
-import bomberman.gui.GameMap;
+import bomberman.component.Entity;
 
 import java.awt.Rectangle;
 import java.util.List;
