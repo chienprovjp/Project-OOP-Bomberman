@@ -2,9 +2,8 @@ package src.Screen;
 
 import java.io.File;
 
-import javafx.geometry.Pos;
 import javafx.scene.control.Button;
-import javafx.scene.layout.VBox;
+import javafx.scene.shape.Circle;
 import src.Main.StateMachine;
 import src.Map.MapData;
 import src.Window.Window;
@@ -26,34 +25,60 @@ public class LevelSelect extends Screen {
         backgroundImageView.setFitHeight(720);
         getRoot().getChildren().add(backgroundImageView);
 
-        VBox box = new VBox(15);
-        box.setAlignment(Pos.CENTER);
-        box.setPrefSize(
-            Window.getInstance().getWidth(),
-            Window.getInstance().getHeight()
-        );
+        double[][] levelPositions = {
+            {118, 195},
+            {642, 420},
+            {1106, 279}
+        };
 
         for (int i = 1; i <= MapData.LEVEL_COUNT; i++) {
             int level = i;
 
-            Button levelButton = new Button("Man " + level);
+            Button levelButton = new Button("LEVEL" + level);
+            levelButton.setAccessibleText("Man " + level);
+            levelButton.setShape(new Circle(40));
+            levelButton.setMinSize(60, 60);
+            levelButton.setPrefSize(60, 60);
+            levelButton.setMaxSize(60, 60);
+            levelButton.setStyle(
+                "-fx-background-color: #f4c542;"
+                    + "-fx-background-radius: 40px;"
+                    + "-fx-border-color: #8d4e24;"
+                    + "-fx-border-width: 4px;"
+                    + "-fx-border-radius: 40px;"
+                    + "-fx-text-fill: #422516;"
+                    + "-fx-font-size: 12px;"
+                    + "-fx-font-weight: bold;"
+                    + "-fx-cursor: hand;"
+            );
+            levelButton.setLayoutX(levelPositions[level - 1][0] - 30);
+            levelButton.setLayoutY(levelPositions[level - 1][1] - 30);
             levelButton.setOnAction(e -> {
                 Gameplay.getInstance().startLevel(level);
                 StateMachine.getInstance().setState(StateMachine.State.GAMEPLAY);
                 Window.getInstance().changeScreen();
             });
 
-            box.getChildren().add(levelButton);
+            getRoot().getChildren().add(levelButton);
         }
 
         Button backButton = new Button("Quay lai");
+        backButton.setLayoutX(24);
+        backButton.setLayoutY(24);
+        backButton.setStyle(
+            "-fx-background-color: rgba(35, 54, 35, 0.88);"
+                + "-fx-background-radius: 18px;"
+                + "-fx-text-fill: white;"
+                + "-fx-font-size: 14px;"
+                + "-fx-font-weight: bold;"
+                + "-fx-padding: 9px 16px;"
+                + "-fx-cursor: hand;"
+        );
         backButton.setOnAction(e -> {
             StateMachine.getInstance().setState(StateMachine.State.MAIN_MENU);
             Window.getInstance().changeScreen();
         });
-        box.getChildren().add(backButton);
-
-        root.getChildren().add(box);
+        getRoot().getChildren().add(backButton);
     }
 
     public static LevelSelect getInstance() {
