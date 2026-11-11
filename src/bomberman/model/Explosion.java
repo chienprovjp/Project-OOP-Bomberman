@@ -44,6 +44,10 @@ public class Explosion extends Entity {
     private static BufferedImage sprite = ResourceLoader.loadImage("explosion.png");
 
     public Explosion(int centerCol, int centerRow, int radius, GameMap map) {
+        this(centerCol, centerRow, radius, map, null);
+    }
+
+    public Explosion(int centerCol, int centerRow, int radius, GameMap map, List<Item> items) {
         super(centerCol * GameMap.TILE_SIZE,
               centerRow * GameMap.TILE_SIZE,
               GameMap.TILE_SIZE,
@@ -67,7 +71,10 @@ public class Explosion extends Entity {
                 if (tile == GameMap.WALL) {
                     break; // Bị tường đá chặn
                 } else if (tile == GameMap.BRICK) {
-                    map.destroyBrick(r, c); // Phá gạch rồi dừng
+                    Item dropped = map.destroyBrick(r, c); // Phá gạch (Cơ chế 1: Rơi Item)
+                    if (dropped != null && items != null) {
+                        items.add(dropped);
+                    }
                     segments.add(new FlameSegment(c, r));
                     break;
                 } else {

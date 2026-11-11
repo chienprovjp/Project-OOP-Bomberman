@@ -6,8 +6,10 @@ import bomberman.model.Bomb;
 import bomberman.model.Enemy;
 import bomberman.model.Explosion;
 import bomberman.model.GameMap;
+import bomberman.model.Item;
 import bomberman.model.MapData;
 import bomberman.model.Player;
+import bomberman.model.Portal;
 import bomberman.util.GameSaveData;
 import bomberman.util.SaveManager;
 
@@ -38,14 +40,20 @@ public class GamePanel extends JPanel {
     private int lives = 3;
     private int highScore = 0;
 
-    // Danh sách bom, vụ nổ và kẻ địch
+    // Danh sách bom, vụ nổ, kẻ địch và vật phẩm
     private List<Bomb> bombs = new ArrayList<>();
     private List<Explosion> explosions = new ArrayList<>();
     private List<Enemy> enemies = new ArrayList<>();
+    private List<Item> items = new ArrayList<>();
+    private Portal portal = null; // Cổng qua màn (xuất hiện sau khi diệt hết quái)
+    private int lastEnemyX = -1;
+    private int lastEnemyY = -1;
 
     private int maxBombs = 1; // Số lượng bom tối đa đặt cùng lúc
     private int bombRadius = 1; // Bán kính nổ (1 ô)
     private int invulnerableTimer = 0; // Bộ đếm thời gian bất tử sau khi hồi sinh
+    private String notificationText = ""; // Thông báo khi nhặt được item
+    private int notificationTimer = 0;
 
     public GamePanel() {
         this.map = new GameMap();
@@ -97,7 +105,7 @@ public class GamePanel extends JPanel {
             b.checkPlayerExit(player);
 
             if (b.isExploded()) {
-                explosions.add(new Explosion(b.getTileCol(), b.getTileRow(), b.getRadius(), map));
+                explosions.add(new Explosion(b.getTileCol(), b.getTileRow(), b.getRadius(), map, items));
                 bombIt.remove();
             }
         }
@@ -119,10 +127,30 @@ public class GamePanel extends JPanel {
             for (Enemy enemy : enemies) {
                 if (enemy.isAlive() && exp.hitsEntity(enemy)) {
                     enemy.kill();
+                    lastEnemyX = enemy.getX();
+                    lastEnemyY = enemy.getY();
                     score += enemy.getScoreReward();
                     if (score > highScore) {
                         highScore = score;
                     }
+
+                    // Cơ chế 2: Rơi Item ngẫu nhiên khi diệt quái (25% tỉ lệ)
+                    if (Math.random() < 0.25) {
+                        int tileCol = (enemy.getX() + enemy.getWidth() / 2) / GameMap.TILE_SIZE;
+                        int tileRow = (enemy.getY() + enemy.getHeight() / 2) / GameMap.TILE_SIZE;
+                        if (map.getTile(tileRow, tileCol) == GameMap.GRASS) {
+                            items.add(Item.createRandomItem(tileCol * GameMap.TILE_SIZE, tileRow * GameMap.TILE_SIZE));
+                        }
+                    }
+                }
+            }
+
+            // Kiểm tra tia lửa thiêu rụi Item trên đất (Luật chuẩn Bomberman - chỉ cháy khi đã hết thời gian bảo vệ)
+            Iterator<Item> itemBurnIt = items.iterator();
+            while (itemBurnIt.hasNext()) {
+                Item it = itemBurnIt.next();
+                if (it.canBeBurned() && exp.hitsEntity(it)) {
+                    itemBurnIt.remove();
                 }
             }
 
@@ -149,9 +177,48 @@ public class GamePanel extends JPanel {
             }
         }
 
-        // 4. Kiểm tra điều kiện thắng màn: Đã tiêu diệt hết quái vật!
+        // 4. Cập nhật danh sách Item (Nhặt vật phẩm)
+        Iterator<Item> itemIt = items.iterator();
+        while (itemIt.hasNext()) {
+            Item item = itemIt.next();
+            item.update();
+            if (item.intersects(player)) {
+                item.applyEffect(player, this);
+                setNotification("NHẬN ĐƯỢC: " + item.getItemName());
+                itemIt.remove();
+            }
+        }
+
+        if (notificationTimer > 0) {
+            notificationTimer--;
+        }
+
+        // 5. Kiểm tra điều kiện mở cổng: Đã tiêu diệt hết kẻ địch!
         if (enemies.isEmpty()) {
-            triggerVictory();
+            if (portal == null) {
+                int pCol, pRow;
+                if (lastEnemyX >= 0 && lastEnemyY >= 0) {
+                    pCol = (lastEnemyX + 16) / GameMap.TILE_SIZE;
+                    pRow = (lastEnemyY + 16) / GameMap.TILE_SIZE;
+                } else {
+                    pCol = map.getCols() - 2;
+                    pRow = map.getRows() - 2;
+                }
+                // Đảm bảo không đặt cổng vào tường cố định
+                if (pRow <= 0 || pRow >= map.getRows() - 1 || pCol <= 0 || pCol >= map.getCols() - 1 
+                        || map.getTile(pRow, pCol) == GameMap.WALL) {
+                    pCol = map.getCols() - 2;
+                    pRow = map.getRows() - 2;
+                }
+                portal = new Portal(pCol * GameMap.TILE_SIZE, pRow * GameMap.TILE_SIZE);
+                setNotification("ĐÃ DIỆT HẾT QUÁI! HÃY BƯỚC VÀO CỔNG ĐỂ QUA MÀN!");
+            } else {
+                portal.update();
+                // Người chơi bước vào cổng -> Kích hoạt qua màn / chiến thắng!
+                if (player.intersects(portal)) {
+                    triggerVictory();
+                }
+            }
         }
     }
 
@@ -232,6 +299,11 @@ public class GamePanel extends JPanel {
         map.loadLevel(this.level);
         bombs.clear();
         explosions.clear();
+        items.clear();
+        portal = null;
+        lastEnemyX = -1;
+        lastEnemyY = -1;
+        notificationTimer = 0;
         player.reset(getPlayerSpawnX(), getPlayerSpawnY());
         spawnEnemies(2 + this.level);
         this.state = GameState.PLAYING;
@@ -254,9 +326,16 @@ public class GamePanel extends JPanel {
         this.level = chosenLevel;
         this.score = 0;
         this.lives = 3;
+        this.maxBombs = 1;
+        this.bombRadius = 1;
         map.loadLevel(chosenLevel);
         bombs.clear();
         explosions.clear();
+        items.clear();
+        portal = null;
+        lastEnemyX = -1;
+        lastEnemyY = -1;
+        notificationTimer = 0;
         player.reset(getPlayerSpawnX(), getPlayerSpawnY());
         spawnEnemies(2 + chosenLevel);
         // Lưu tiến trình bắt đầu
@@ -273,6 +352,11 @@ public class GamePanel extends JPanel {
         map.loadLevel(chosenLevel);
         bombs.clear();
         explosions.clear();
+        items.clear();
+        portal = null;
+        lastEnemyX = -1;
+        lastEnemyY = -1;
+        notificationTimer = 0;
         player.reset(getPlayerSpawnX(), getPlayerSpawnY());
         spawnEnemies(2 + chosenLevel);
         this.state = GameState.PLAYING;
@@ -288,6 +372,11 @@ public class GamePanel extends JPanel {
             map.loadLevel(this.level);
             bombs.clear();
             explosions.clear();
+            items.clear();
+            portal = null;
+            lastEnemyX = -1;
+            lastEnemyY = -1;
+            notificationTimer = 0;
             player.reset(getPlayerSpawnX(), getPlayerSpawnY());
             spawnEnemies(2 + this.level);
             // Lưu ngay khi vừa bước sang màn mới
@@ -465,22 +554,32 @@ public class GamePanel extends JPanel {
                 // 1. Vẽ bản đồ (cỏ, tường đá, gạch)
                 map.draw(g2d);
 
-                // 2. Vẽ Bombs
+                // 1.5. Vẽ Cổng qua màn nếu đã mở (nằm trên cỏ, dưới chân người chơi)
+                if (portal != null) {
+                    portal.draw(g2d);
+                }
+
+                // 2. Vẽ Items trên mặt đất (Cơ chế 1 & 2)
+                for (Item item : items) {
+                    item.draw(g2d);
+                }
+
+                // 3. Vẽ Bombs
                 for (Bomb b : bombs) {
                     b.draw(g2d);
                 }
 
-                // 3. Vẽ Vụ nổ
+                // 4. Vẽ Vụ nổ
                 for (Explosion exp : explosions) {
                     exp.draw(g2d);
                 }
 
-                // 4. Vẽ Kẻ địch
+                // 5. Vẽ Kẻ địch
                 for (Enemy enemy : enemies) {
                     enemy.draw(g2d);
                 }
 
-                // 5. Vẽ Player (nhấp nháy khi bất tử)
+                // 6. Vẽ Player (nhấp nháy khi bất tử)
                 if (state != GameState.GAME_OVER) {
                     if (invulnerableTimer == 0 || (invulnerableTimer / 5) % 2 == 0) {
                         player.draw(g2d);
@@ -508,15 +607,56 @@ public class GamePanel extends JPanel {
     }
 
     private void drawHUD(Graphics g) {
-        g.setColor(new Color(15, 23, 42, 210));
-        g.fillRoundRect(10, 8, 560, 28, 8, 8);
+        int hudWidth = 720;
+        g.setColor(new Color(15, 23, 42, 215));
+        g.fillRoundRect(10, 8, hudWidth, 28, 8, 8);
         g.setColor(new Color(56, 189, 248));
-        g.drawRoundRect(10, 8, 560, 28, 8, 8);
+        g.drawRoundRect(10, 8, hudWidth, 28, 8, 8);
 
         g.setColor(new Color(241, 245, 249));
         g.setFont(new Font("SansSerif", Font.BOLD, 12));
-        g.drawString("MÀN: " + level + "  |  ĐIỂM: " + score + "  |  KỶ LỤC: " + highScore + "  |  MẠNG: " + lives
-                + "  |  SPACE: ĐẶT BOM", 20, 27);
+        g.drawString("MÀN: " + level + "  |  ĐIỂM: " + score + "  |  MẠNG: " + lives
+                + "  |  BOM: " + maxBombs + "  |  LỬA: " + bombRadius + "  |  TỐC ĐỘ: " + player.getSpeed()
+                + "  |  SPACE: ĐẶT BOM", 18, 27);
+
+        // Hiển thị thông báo khi vừa nhặt được Item
+        if (notificationTimer > 0 && !notificationText.isEmpty()) {
+            g.setFont(new Font("SansSerif", Font.BOLD, 13));
+            java.awt.FontMetrics fm = g.getFontMetrics();
+            int textW = fm.stringWidth(notificationText);
+            int boxW = textW + 30;
+            int boxX = (getWidth() - boxW) / 2;
+            int boxY = 44;
+
+            g.setColor(new Color(15, 23, 42, 235));
+            g.fillRoundRect(boxX, boxY, boxW, 28, 8, 8);
+            g.setColor(new Color(250, 204, 21)); // Viền vàng neon
+            g.drawRoundRect(boxX, boxY, boxW, 28, 8, 8);
+
+            g.setColor(new Color(253, 224, 71)); // Chữ vàng rực
+            g.drawString(notificationText, boxX + 15, boxY + 19);
+        }
+    }
+
+    public void increaseMaxBombs() {
+        this.maxBombs = Math.min(8, this.maxBombs + 1);
+    }
+
+    public void increaseBombRadius() {
+        this.bombRadius = Math.min(6, this.bombRadius + 1);
+    }
+
+    public void increaseLives() {
+        this.lives = Math.min(9, this.lives + 1);
+    }
+
+    public void setNotification(String text) {
+        this.notificationText = text;
+        this.notificationTimer = 100; // ~1.6 giây
+    }
+
+    public List<Item> getItems() {
+        return items;
     }
 
     // Các phương thức chuyển trạng thái Game
@@ -533,6 +673,11 @@ public class GamePanel extends JPanel {
         player.stopMoving();
         bombs.clear();
         explosions.clear();
+        items.clear();
+        portal = null;
+        lastEnemyX = -1;
+        lastEnemyY = -1;
+        notificationTimer = 0;
         // Thoát ra menu khi chưa xong ván -> lưu lại tiến trình dở dang
         SaveManager.saveProgress(level, score, lives, highScore, true);
         this.state = GameState.MENU;

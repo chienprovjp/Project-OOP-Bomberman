@@ -58,6 +58,11 @@ public class Menu {
     private BufferedImage backgroundImage;
     private BufferedImage backgroundLevelImage;
     private BufferedImage playButtonImage;
+    private BufferedImage itemBombIcon;
+    private BufferedImage itemFlameIcon;
+    private BufferedImage itemSpeedIcon;
+    private BufferedImage itemLifeIcon;
+    private BufferedImage portalIcon;
 
     public Menu() {
         loadAssets();
@@ -81,6 +86,12 @@ public class Menu {
         if (playerIcon == null) {
             playerIcon = ResourceLoader.loadImage("player.png");
         }
+
+        itemBombIcon = ResourceLoader.loadImage("item_bomb.png");
+        itemFlameIcon = ResourceLoader.loadImage("item_flame.png");
+        itemSpeedIcon = ResourceLoader.loadImage("item_speed.png");
+        itemLifeIcon = ResourceLoader.loadImage("item_life.png");
+        portalIcon = ResourceLoader.loadImage("portal.png");
     }
 
     /**
@@ -625,44 +636,131 @@ public class Menu {
         g2d.setColor(new Color(15, 23, 42));
         g2d.fillRect(0, 0, width, height);
 
-        int panelW = Math.min(680, width - 40);
-        int panelH = Math.min(480, height - 60);
+        int panelW = Math.min(940, width - 40);
+        int panelH = Math.min(520, height - 80);
         int px = (width - panelW) / 2;
-        int py = 20;
+        int py = 15;
 
-        g2d.setColor(new Color(30, 41, 59, 230));
+        g2d.setColor(new Color(30, 41, 59, 235));
         g2d.fillRoundRect(px, py, panelW, panelH, 16, 16);
         g2d.setColor(new Color(71, 85, 105));
         g2d.setStroke(new BasicStroke(1.5f));
         g2d.drawRoundRect(px, py, panelW, panelH, 16, 16);
 
         // Header
-        g2d.setFont(new Font("SansSerif", Font.BOLD, 22));
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 21));
         FontMetrics tfm = g2d.getFontMetrics();
-        String title = "HƯỚNG DẪN ĐIỀU KHIỂN & LUẬT CHƠI";
+        String title = "HƯỚNG DẪN ĐIỀU KHIỂN & HỆ THỐNG VẬT PHẨM (ITEMS)";
         g2d.setColor(new Color(250, 204, 21));
-        g2d.drawString(title, px + (panelW - tfm.stringWidth(title)) / 2, py + 38);
+        g2d.drawString(title, px + (panelW - tfm.stringWidth(title)) / 2, py + 34);
 
-        // Nội dung hướng dẫn
-        g2d.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        int midX = px + panelW / 2;
+
+        // Đường phân cách giữa 2 cột
+        g2d.setColor(new Color(51, 65, 85));
+        g2d.drawLine(midX, py + 50, midX, py + panelH - 25);
+
+        // ========================================================
+        // CỘT TRÁI: ĐIỀU KHIỂN & LUẬT CHƠI
+        // ========================================================
+        int col1X = px + 28;
+        int textY = py + 72;
+        int lineGap = 26;
+
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 15));
+        g2d.setColor(new Color(56, 189, 248)); // Xanh Cyan
+        g2d.drawString("🎮 ĐIỀU KHIỂN & LUẬT CHƠI", col1X, textY);
+        textY += lineGap + 4;
+
+        g2d.setFont(new Font("SansSerif", Font.PLAIN, 13));
         g2d.setColor(new Color(241, 245, 249));
 
-        int textY = py + 80;
-        int lineGap = 28;
+        g2d.drawString("• DI CHUYỂN: Dùng phím W / A / S / D hoặc 4 phím mũi tên.", col1X, textY);
+        textY += lineGap;
+        g2d.drawString("• ĐẶT BOM: Nhấn phím SPACE để đặt bom tại ô đang đứng.", col1X, textY);
+        textY += lineGap;
+        g2d.drawString("• TẠM DỪNG: Nhấn ESC để tạm dừng hoặc mở menu tùy chọn.", col1X, textY);
+        textY += lineGap;
+        g2d.drawString("• LƯU TIẾN TRÌNH: Tự động lưu khi về Menu [M] hoặc tắt cửa sổ.", col1X, textY);
+        textY += lineGap;
+        g2d.drawString("• TIẾP TỤC: Chọn 'TIẾP TỤC [MÀN X]' ở Menu để chơi tiếp.", col1X, textY);
+        textY += lineGap;
+        g2d.drawString("• MỤC TIÊU: Đặt bom phá gạch, tiêu diệt toàn bộ quái vật Ballom.", col1X, textY);
+        textY += lineGap;
+        g2d.setColor(new Color(248, 113, 113)); // Đỏ cảnh báo
+        g2d.drawString("• CẨN THẬN: Tránh xa tia lửa bom và không để quái chạm vào!", col1X, textY);
 
-        g2d.drawString("• DI CHUYỂN: Dùng phím W / A / S / D hoặc 4 phím mũi tên.", px + 30, textY);
-        textY += lineGap;
-        g2d.drawString("• ĐẶT BOM: Nhấn phím SPACE để đặt bom tại ô đang đứng.", px + 30, textY);
-        textY += lineGap;
-        g2d.drawString("• TẠM DỪNG: Nhấn ESC để tạm dừng game hoặc mở menu lựa chọn.", px + 30, textY);
-        textY += lineGap;
-        g2d.drawString("• LƯU TIẾN TRÌNH: Khi bấm ESC -> M hoặc tắt game, tiến trình được lưu tự động.", px + 30, textY);
-        textY += lineGap;
-        g2d.drawString("• TIẾP TỤC: Khi vào lại game, bấm 'TIẾP TỤC' để chơi tiếp màn và điểm đang dở.", px + 30, textY);
-        textY += lineGap;
-        g2d.drawString("• LUẬT CHƠI: Đặt bom phá gạch, tiêu diệt toàn bộ quái Ballom để qua màn.", px + 30, textY);
-        textY += lineGap;
-        g2d.drawString("• CẨN THẬN: Tránh xa tia lửa bom và không để quái chạm vào người!", px + 30, textY);
+        // ========================================================
+        // CỘT PHẢI: HỆ THỐNG VẬT PHẨM (ITEMS) & CỔNG
+        // ========================================================
+        int col2X = midX + 28;
+        int itemY = py + 72;
+        int iconSize = 22;
+
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 15));
+        g2d.setColor(new Color(250, 204, 21)); // Vàng Gold
+        g2d.drawString("🎁 VẬT PHẨM (ITEMS) & CỔNG QUA MÀN", col2X, itemY);
+        itemY += 24;
+
+        g2d.setFont(new Font("SansSerif", Font.ITALIC, 11));
+        g2d.setColor(new Color(148, 163, 184));
+        g2d.drawString("(Rơi ra khi nổ gạch ~40% hoặc tiêu diệt quái ~25%)", col2X, itemY);
+        itemY += lineGap - 2;
+
+        // 1. Bomb Item
+        if (itemBombIcon != null) g2d.drawImage(itemBombIcon, col2X, itemY - 14, iconSize, iconSize, null);
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 13));
+        g2d.setColor(new Color(253, 224, 71));
+        g2d.drawString("BOM (Bomb Up):", col2X + iconSize + 8, itemY);
+        g2d.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        g2d.setColor(new Color(241, 245, 249));
+        g2d.drawString("Tăng số bom đặt cùng lúc (+1).", col2X + iconSize + 130, itemY);
+        itemY += lineGap + 2;
+
+        // 2. Flame Item
+        if (itemFlameIcon != null) g2d.drawImage(itemFlameIcon, col2X, itemY - 14, iconSize, iconSize, null);
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 13));
+        g2d.setColor(new Color(249, 115, 22));
+        g2d.drawString("LỬA (Fire Up):", col2X + iconSize + 8, itemY);
+        g2d.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        g2d.setColor(new Color(241, 245, 249));
+        g2d.drawString("Tăng độ dài tia nổ thêm 1 ô (+1).", col2X + iconSize + 130, itemY);
+        itemY += lineGap + 2;
+
+        // 3. Speed Item
+        if (itemSpeedIcon != null) g2d.drawImage(itemSpeedIcon, col2X, itemY - 14, iconSize, iconSize, null);
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 13));
+        g2d.setColor(new Color(56, 189, 248));
+        g2d.drawString("GIÀY (Speed Up):", col2X + iconSize + 8, itemY);
+        g2d.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        g2d.setColor(new Color(241, 245, 249));
+        g2d.drawString("Tăng tốc độ di chuyển nhân vật.", col2X + iconSize + 130, itemY);
+        itemY += lineGap + 2;
+
+        // 4. Life Item
+        if (itemLifeIcon != null) g2d.drawImage(itemLifeIcon, col2X, itemY - 14, iconSize, iconSize, null);
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 13));
+        g2d.setColor(new Color(239, 68, 68));
+        g2d.drawString("TIM (Life Up):", col2X + iconSize + 8, itemY);
+        g2d.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        g2d.setColor(new Color(241, 245, 249));
+        g2d.drawString("Cộng thêm 1 mạng chơi (+1).", col2X + iconSize + 130, itemY);
+        itemY += lineGap + 2;
+
+        // 5. Portal
+        if (portalIcon != null) g2d.drawImage(portalIcon, col2X, itemY - 14, iconSize, iconSize, null);
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 13));
+        g2d.setColor(new Color(168, 85, 247));
+        g2d.drawString("CỔNG (Portal):", col2X + iconSize + 8, itemY);
+        g2d.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        g2d.setColor(new Color(241, 245, 249));
+        g2d.drawString("Diệt hết quái cổng sẽ mở để qua màn!", col2X + iconSize + 130, itemY);
+        itemY += lineGap + 2;
+
+        // Lưu ý
+        g2d.setFont(new Font("SansSerif", Font.ITALIC, 11));
+        g2d.setColor(new Color(252, 165, 165));
+        g2d.drawString("⚠️ Lưu ý: Tia lửa bom quét trúng sẽ thiêu rụi Item trên đất!", col2X, itemY);
 
         // Nút QUAY LẠI
         Rectangle r = helpBackBounds;

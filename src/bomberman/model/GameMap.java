@@ -22,6 +22,7 @@ public class GameMap {
     private int rows = DEFAULT_ROWS;
     private int cols = DEFAULT_COLS;
     private int[][] tiles;
+    private Item[][] hiddenItems;
 
     // Sprite hình ảnh môi trường
     private BufferedImage grassImage;
@@ -51,6 +52,7 @@ public class GameMap {
         } else {
             initDefaultMap();
         }
+        generateHiddenItems();
     }
 
     public void initDefaultMap() {
@@ -106,6 +108,25 @@ public class GameMap {
         tiles[1][1] = GRASS;
         tiles[1][2] = GRASS;
         tiles[2][1] = GRASS;
+
+        generateHiddenItems();
+    }
+
+    /**
+     * Khởi tạo các Item giấu dưới gạch (Cơ chế 1: Nổ gạch rơi ra Item).
+     */
+    private void generateHiddenItems() {
+        hiddenItems = new Item[rows][cols];
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (tiles[r][c] == BRICK) {
+                    // ~40% cơ hội có Item ẩn giấu dưới gạch
+                    if (Math.random() < 0.40) {
+                        hiddenItems[r][c] = Item.createRandomItem(c * TILE_SIZE, r * TILE_SIZE);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -135,13 +156,18 @@ public class GameMap {
 
     /**
      * Phá hủy tường gạch tại vị trí hàng và cột.
+     * Trả về Item ẩn bên dưới nếu có (Cơ chế 1: Nổ gạch rơi ra Item).
      */
-    public boolean destroyBrick(int row, int col) {
+    public Item destroyBrick(int row, int col) {
         if (row >= 0 && row < rows && col >= 0 && col < cols && tiles[row][col] == BRICK) {
             tiles[row][col] = GRASS;
-            return true;
+            if (hiddenItems != null && hiddenItems[row][col] != null) {
+                Item item = hiddenItems[row][col];
+                hiddenItems[row][col] = null;
+                return item;
+            }
         }
-        return false;
+        return null;
     }
 
     public int getTile(int row, int col) {

@@ -173,4 +173,14 @@ public class Player extends Entity {
 
     public BufferedImage getSpriteDown() { return spriteDown; }
     public Direction getDirection() { return direction; }
+
+    public void increaseSpeed() {
+        if (this.speed < 7) { // Giới hạn tốc độ tối đa để không xuyên tường
+            this.speed += 1;
+        }
+    }
+
+    public int getSpeed() {
+        return speed;
+    }
 }
