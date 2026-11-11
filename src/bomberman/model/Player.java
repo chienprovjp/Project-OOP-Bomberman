@@ -280,6 +280,10 @@ public class Player extends Entity {
         }
     }
 
+    public void resetSpeed() {
+        this.speed = Math.max(3, GameMap.TILE_SIZE / 12);
+    }
+
     public int getSpeed() {
         return speed;
     }

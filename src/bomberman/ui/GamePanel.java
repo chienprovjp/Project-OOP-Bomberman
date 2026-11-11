@@ -1,5 +1,6 @@
 package bomberman.ui;
 
+import bomberman.component.Difficulty;
 import bomberman.component.GameState;
 import bomberman.model.Ballom;
 import bomberman.model.Bomb;
@@ -39,6 +40,7 @@ public class GamePanel extends JPanel {
     private int score = 0;
     private int lives = 3;
     private int highScore = 0;
+    private Difficulty difficulty = Difficulty.NORMAL;
 
     // Danh sách bom, vụ nổ, kẻ địch và vật phẩm
     private List<Bomb> bombs = new ArrayList<>();
@@ -129,17 +131,18 @@ public class GamePanel extends JPanel {
                     enemy.kill();
                     lastEnemyX = enemy.getX();
                     lastEnemyY = enemy.getY();
-                    score += enemy.getScoreReward();
+                    int reward = (int) (enemy.getScoreReward() * difficulty.getScoreMultiplier());
+                    score += reward;
                     if (score > highScore) {
                         highScore = score;
                     }
 
-                    // Cơ chế 2: Rơi Item ngẫu nhiên khi diệt quái (25% tỉ lệ)
-                    if (Math.random() < 0.25) {
+                    // Cơ chế 2: Rơi Item ngẫu nhiên khi diệt quái (tùy theo độ khó)
+                    if (Math.random() < difficulty.getEnemyDropRate()) {
                         int tileCol = (enemy.getX() + enemy.getWidth() / 2) / GameMap.TILE_SIZE;
                         int tileRow = (enemy.getY() + enemy.getHeight() / 2) / GameMap.TILE_SIZE;
                         if (map.getTile(tileRow, tileCol) == GameMap.GRASS) {
-                            items.add(Item.createRandomItem(tileCol * GameMap.TILE_SIZE, tileRow * GameMap.TILE_SIZE));
+                            items.add(Item.createRandomItem(tileCol * GameMap.TILE_SIZE, tileRow * GameMap.TILE_SIZE, difficulty));
                         }
                     }
                 }
@@ -320,15 +323,30 @@ public class GamePanel extends JPanel {
     }
 
     /**
-     * Bắt đầu một màn chơi mới từ đầu (reset điểm về 0, mạng về 3)
+     * Bắt đầu một màn chơi với độ khó cụ thể.
+     */
+    public void startLevelWithDifficulty(int chosenLevel, Difficulty diff) {
+        this.difficulty = (diff != null) ? diff : Difficulty.NORMAL;
+        this.score = 0;
+        this.lives = this.difficulty.getInitialLives();
+        this.maxBombs = 1;
+        this.bombRadius = 1;
+        player.resetSpeed();
+        startLevel(chosenLevel);
+        setNotification("BẮT ĐẦU: MÀN " + chosenLevel + " - ĐỘ KHÓ: " + this.difficulty.getDisplayName());
+    }
+
+    /**
+     * Bắt đầu một màn chơi mới từ đầu (reset điểm về 0, mạng theo độ khó)
      */
     public void startLevelFromBeginning(int chosenLevel) {
         this.level = chosenLevel;
         this.score = 0;
-        this.lives = 3;
+        this.lives = this.difficulty.getInitialLives();
         this.maxBombs = 1;
         this.bombRadius = 1;
-        map.loadLevel(chosenLevel);
+        player.resetSpeed();
+        map.loadLevel(chosenLevel, this.difficulty);
         bombs.clear();
         explosions.clear();
         items.clear();
@@ -339,7 +357,7 @@ public class GamePanel extends JPanel {
         player.reset(getPlayerSpawnX(), getPlayerSpawnY());
         spawnEnemies(2 + chosenLevel);
         // Lưu tiến trình bắt đầu
-        SaveManager.saveProgress(chosenLevel, 0, 3, highScore, true);
+        SaveManager.saveProgress(chosenLevel, 0, this.lives, highScore, true);
         this.state = GameState.PLAYING;
         setCursor(Cursor.getDefaultCursor());
     }
@@ -349,7 +367,7 @@ public class GamePanel extends JPanel {
      */
     public void startLevel(int chosenLevel) {
         this.level = chosenLevel;
-        map.loadLevel(chosenLevel);
+        map.loadLevel(chosenLevel, this.difficulty);
         bombs.clear();
         explosions.clear();
         items.clear();
@@ -369,14 +387,22 @@ public class GamePanel extends JPanel {
     public void nextLevel() {
         if (level < MapData.LEVEL_COUNT) {
             this.level++;
-            map.loadLevel(this.level);
+            // Nếu ở chế độ Khó: Reset toàn bộ chỉ số item đã nhặt (qua màn là mới tinh)
+            if (difficulty.isResetItemsOnNextLevel()) {
+                this.maxBombs = 1;
+                this.bombRadius = 1;
+                this.player.resetSpeed();
+                setNotification("CHẾ ĐỘ KHÓ: QUA MÀN LÀ MỚI TINH (RESET CHỈ SỐ)!");
+            } else {
+                setNotification("QUA MÀN " + this.level + "! GIỮ NGUYÊN CHỈ SỐ!");
+            }
+            map.loadLevel(this.level, this.difficulty);
             bombs.clear();
             explosions.clear();
             items.clear();
             portal = null;
             lastEnemyX = -1;
             lastEnemyY = -1;
-            notificationTimer = 0;
             player.reset(getPlayerSpawnX(), getPlayerSpawnY());
             spawnEnemies(2 + this.level);
             // Lưu ngay khi vừa bước sang màn mới
@@ -608,7 +634,7 @@ public class GamePanel extends JPanel {
     }
 
     private void drawHUD(Graphics g) {
-        int hudWidth = 720;
+        int hudWidth = 750;
         g.setColor(new Color(15, 23, 42, 215));
         g.fillRoundRect(10, 8, hudWidth, 28, 8, 8);
         g.setColor(new Color(56, 189, 248));
@@ -616,9 +642,21 @@ public class GamePanel extends JPanel {
 
         g.setColor(new Color(241, 245, 249));
         g.setFont(new Font("SansSerif", Font.BOLD, 12));
-        g.drawString("MÀN: " + level + "  |  ĐIỂM: " + score + "  |  MẠNG: " + lives
-                + "  |  BOM: " + maxBombs + "  |  LỬA: " + bombRadius + "  |  TỐC ĐỘ: " + player.getSpeed()
-                + "  |  SPACE: ĐẶT BOM", 18, 27);
+        String infoLeft = "MÀN: " + level + "  |  ĐỘ KHÓ: ";
+        g.drawString(infoLeft, 18, 27);
+        int curX = 18 + g.getFontMetrics().stringWidth(infoLeft);
+
+        // Hiển thị badge độ khó màu đặc trưng (Xanh/Vàng/Đỏ)
+        g.setColor(difficulty.getThemeColor());
+        String diffBadge = "[" + difficulty.getDisplayName() + "]";
+        g.drawString(diffBadge, curX, 27);
+        curX += g.getFontMetrics().stringWidth(diffBadge);
+
+        g.setColor(new Color(241, 245, 249));
+        String infoRight = "  |  ĐIỂM: " + score + "  |  MẠNG: " + lives
+                + "  |  BOM: " + maxBombs + "  |  LỬA: " + bombRadius + "  |  TỐC: " + player.getSpeed()
+                + "  |  SPACE: ĐẶT BOM";
+        g.drawString(infoRight, curX, 27);
 
         // Hiển thị thông báo khi vừa nhặt được Item
         if (notificationTimer > 0 && !notificationText.isEmpty()) {
@@ -711,6 +749,14 @@ public class GamePanel extends JPanel {
 
     public GameState getState() {
         return state;
+    }
+
+    public Difficulty getDifficulty() {
+        return difficulty;
+    }
+
+    public void setDifficulty(Difficulty difficulty) {
+        this.difficulty = (difficulty != null) ? difficulty : Difficulty.NORMAL;
     }
 
     public GameMap getMap() {

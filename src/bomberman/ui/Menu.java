@@ -1,5 +1,6 @@
 package bomberman.ui;
 
+import bomberman.component.Difficulty;
 import bomberman.component.GameState;
 import bomberman.model.GameMap;
 import bomberman.model.MapData;
@@ -37,6 +38,11 @@ public class Menu {
     private final String[] levelOptions = { "MÀN 1", "MÀN 2", "MÀN 3", "QUAY LẠI" };
     private Rectangle[] levelBounds;
     private int hoveredLevelIndex = -1;
+
+    // Trạng thái cho hệ thống 3 Độ Khó (DỄ, THƯỜNG, KHÓ)
+    private Difficulty selectedDifficulty = Difficulty.NORMAL;
+    private Rectangle[] difficultyBounds;
+    private int hoveredDifficultyIndex = -1;
 
     // Trạng thái nút cho màn hình Game Over
     private final String[] gameOverOptions = { "CHƠI LẠI [R]", "CHỌN MÀN [L]", "MENU CHÍNH [M]" };
@@ -166,12 +172,27 @@ public class Menu {
             pauseBounds[i] = new Rectangle(pauseStartX, pauseStartY + i * pauseSpacing, pauseBtnW, pauseBtnH);
         }
 
-        // --- 4. Level Select ---
-        int lvlBtnW = Math.max(200, (int) (width * 0.24));
-        int lvlBtnH = 40;
+        // --- 4. Level & Difficulty Select ---
+        int diffCount = Difficulty.values().length;
+        if (difficultyBounds == null || difficultyBounds.length != diffCount) {
+            difficultyBounds = new Rectangle[diffCount];
+        }
+        int diffBtnW = Math.max(115, (int) (width * 0.13));
+        int diffBtnH = 38;
+        int diffGap = 16;
+        int totalDiffW = diffCount * diffBtnW + (diffCount - 1) * diffGap;
+        int diffStartX = (width - totalDiffW) / 2;
+        int diffStartY = Math.max(112, (int) (height * 0.22));
+
+        for (int i = 0; i < diffCount; i++) {
+            difficultyBounds[i] = new Rectangle(diffStartX + i * (diffBtnW + diffGap), diffStartY, diffBtnW, diffBtnH);
+        }
+
+        int lvlBtnW = Math.max(220, (int) (width * 0.25));
+        int lvlBtnH = 38;
         int lvlStartX = (width - lvlBtnW) / 2;
-        int lvlSpacing = 52;
-        int lvlStartY = (height - (levelOptions.length * lvlSpacing)) / 2 + 35;
+        int lvlSpacing = 48;
+        int lvlStartY = diffStartY + diffBtnH + 54;
         if (levelBounds == null || levelBounds.length != levelOptions.length) {
             levelBounds = new Rectangle[levelOptions.length];
         }
@@ -312,7 +333,7 @@ public class Menu {
     }
 
     // ==========================================
-    // 2. VẼ MÀN HÌNH CHỌN MÀN (LEVEL SELECT)
+    // 2. VẼ MÀN HÌNH CHỌN MÀN & ĐỘ KHÓ
     // ==========================================
     public void drawLevelSelect(Graphics g, int width, int height) {
         updateBounds(width, height);
@@ -324,7 +345,7 @@ public class Menu {
         // Nền: ưu tiên ảnh backgroundlevel.png của Quốc
         if (backgroundLevelImage != null) {
             g2d.drawImage(backgroundLevelImage, 0, 0, width, height, null);
-            g2d.setColor(new Color(15, 23, 42, 140)); // Phủ mờ nhẹ
+            g2d.setColor(new Color(15, 23, 42, 170)); // Phủ mờ nhẹ
             g2d.fillRect(0, 0, width, height);
         } else {
             g2d.setColor(new Color(15, 23, 42));
@@ -332,15 +353,83 @@ public class Menu {
         }
 
         // Tiêu đề
-        g2d.setFont(new Font("SansSerif", Font.BOLD, 32));
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 30));
         FontMetrics tfm = g2d.getFontMetrics();
-        String title = "CHỌN MÀN CHƠI";
+        String title = "CHỌN MÀN CHƠI & ĐỘ KHÓ";
         int titleX = (width - tfm.stringWidth(title)) / 2;
         g2d.setColor(new Color(0, 0, 0, 180));
-        g2d.drawString(title, titleX + 2, 72);
+        g2d.drawString(title, titleX + 2, 57);
         g2d.setColor(new Color(250, 204, 21));
-        g2d.drawString(title, titleX, 70);
+        g2d.drawString(title, titleX, 55);
 
+        // --- 1. KHU VỰC CHỌN ĐỘ KHÓ (DỄ - THƯỜNG - KHÓ) ---
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 12));
+        FontMetrics lfm = g2d.getFontMetrics();
+        String diffLabel = "CHẾ ĐỘ ĐỘ KHÓ:";
+        int labelX = (width - lfm.stringWidth(diffLabel)) / 2;
+        g2d.setColor(new Color(148, 163, 184));
+        g2d.drawString(diffLabel, labelX, difficultyBounds[0].y - 10);
+
+        Font diffFont = new Font("SansSerif", Font.BOLD, 14);
+        g2d.setFont(diffFont);
+        FontMetrics dfm = g2d.getFontMetrics();
+
+        Difficulty[] diffValues = Difficulty.values();
+        for (int i = 0; i < diffValues.length; i++) {
+            Difficulty diff = diffValues[i];
+            Rectangle r = difficultyBounds[i];
+            boolean isHovered = (i == hoveredDifficultyIndex);
+            boolean isSelected = (selectedDifficulty == diff);
+
+            // Bỏ hình tròn cạnh chữ, chỉ đổi màu ô rounded box khi hover/select
+            if (isHovered) {
+                g2d.setColor(diff.getHoverBgColor());
+                g2d.fillRoundRect(r.x, r.y, r.width, r.height, 8, 8);
+                g2d.setColor(diff.getHoverBorderColor());
+                g2d.setStroke(new BasicStroke(2.2f));
+                g2d.drawRoundRect(r.x, r.y, r.width, r.height, 8, 8);
+            } else if (isSelected) {
+                // Ô đang được chọn: nền bán đậm, viền màu đặc trưng
+                if (diff == Difficulty.EASY) g2d.setColor(new Color(20, 83, 45, 220));
+                else if (diff == Difficulty.NORMAL) g2d.setColor(new Color(133, 77, 14, 220));
+                else g2d.setColor(new Color(153, 27, 27, 220));
+
+                g2d.fillRoundRect(r.x, r.y, r.width, r.height, 8, 8);
+                g2d.setColor(diff.getThemeColor());
+                g2d.setStroke(new BasicStroke(2.2f));
+                g2d.drawRoundRect(r.x, r.y, r.width, r.height, 8, 8);
+            } else {
+                // Ô chưa chọn & chưa hover: xám tối lịch sự
+                g2d.setColor(new Color(30, 41, 59, 210));
+                g2d.fillRoundRect(r.x, r.y, r.width, r.height, 8, 8);
+                g2d.setColor(new Color(71, 85, 105));
+                g2d.setStroke(new BasicStroke(1.2f));
+                g2d.drawRoundRect(r.x, r.y, r.width, r.height, 8, 8);
+            }
+
+            // Tên độ khó: DỄ / THƯỜNG / KHÓ
+            String diffName = diff.getDisplayName();
+            if (isHovered || isSelected) {
+                g2d.setColor(Color.WHITE);
+            } else {
+                g2d.setColor(new Color(148, 163, 184));
+            }
+            int dtx = r.x + (r.width - dfm.stringWidth(diffName)) / 2;
+            int dty = r.y + ((r.height - dfm.getHeight()) / 2) + dfm.getAscent();
+            g2d.drawString(diffName, dtx, dty);
+        }
+
+        // Dòng chú thích chi tiết cho độ khó đang chọn (hoặc đang hover)
+        Difficulty activeDiff = (hoveredDifficultyIndex >= 0) ? diffValues[hoveredDifficultyIndex] : selectedDifficulty;
+        g2d.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        FontMetrics descFm = g2d.getFontMetrics();
+        String descText = activeDiff.getDescription();
+        int descX = (width - descFm.stringWidth(descText)) / 2;
+        int descY = difficultyBounds[0].y + difficultyBounds[0].height + 22;
+        g2d.setColor(activeDiff.getThemeColor());
+        g2d.drawString(descText, descX, descY);
+
+        // --- 2. KHU VỰC CHỌN MÀN CHƠI ---
         Font btnFont = new Font("SansSerif", Font.BOLD, 14);
         g2d.setFont(btnFont);
         FontMetrics bfm = g2d.getFontMetrics();
@@ -352,28 +441,28 @@ public class Menu {
             if (i == levelOptions.length - 1) { // Nút Quay Lại
                 if (isHovered) {
                     g2d.setColor(new Color(220, 38, 38));
-                    g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+                    g2d.fillRoundRect(r.x, r.y, r.width, r.height, 8, 8);
                     g2d.setColor(new Color(252, 165, 165));
-                    g2d.drawRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+                    g2d.drawRoundRect(r.x, r.y, r.width, r.height, 8, 8);
                 } else {
                     g2d.setColor(new Color(51, 65, 85, 220));
-                    g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+                    g2d.fillRoundRect(r.x, r.y, r.width, r.height, 8, 8);
                     g2d.setColor(new Color(148, 163, 184));
-                    g2d.drawRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+                    g2d.drawRoundRect(r.x, r.y, r.width, r.height, 8, 8);
                 }
             } else {
                 if (isHovered) {
                     g2d.setColor(new Color(14, 165, 233));
-                    g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+                    g2d.fillRoundRect(r.x, r.y, r.width, r.height, 8, 8);
                     g2d.setColor(new Color(224, 242, 254));
                     g2d.setStroke(new BasicStroke(2));
-                    g2d.drawRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+                    g2d.drawRoundRect(r.x, r.y, r.width, r.height, 8, 8);
                 } else {
                     g2d.setColor(new Color(30, 41, 59, 220));
-                    g2d.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+                    g2d.fillRoundRect(r.x, r.y, r.width, r.height, 8, 8);
                     g2d.setColor(new Color(56, 189, 248));
                     g2d.setStroke(new BasicStroke(1.2f));
-                    g2d.drawRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+                    g2d.drawRoundRect(r.x, r.y, r.width, r.height, 8, 8);
                 }
             }
 
@@ -689,6 +778,25 @@ public class Menu {
         textY += lineGap;
         g2d.setColor(new Color(248, 113, 113)); // Đỏ cảnh báo
         g2d.drawString("• CẨN THẬN: Tránh xa tia lửa bom và không để quái chạm vào!", col1X, textY);
+        textY += lineGap + 10;
+
+        // 3 Cấp độ khó
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 14));
+        g2d.setColor(new Color(168, 85, 247)); // Tím neon
+        g2d.drawString("🏆 3 CẤP ĐỘ ĐỘ KHÓ (CHỌN TẠI MÀN HÌNH CHỌN MÀN):", col1X, textY);
+        textY += 22;
+
+        g2d.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        g2d.setColor(new Color(74, 222, 128));
+        g2d.drawString("• DỄ: Rơi item nhiều (40% gạch, 25% quái), giữ nguyên chỉ số qua màn.", col1X, textY);
+        textY += 20;
+
+        g2d.setColor(new Color(250, 204, 21));
+        g2d.drawString("• THƯỜNG: Cân bằng (25% gạch, 12% quái), giữ nguyên chỉ số qua màn.", col1X, textY);
+        textY += 20;
+
+        g2d.setColor(new Color(248, 113, 113));
+        g2d.drawString("• KHÓ: Item hiếm (12% gạch, 0% quái), QUA MÀN RESET SẠCH CHỈ SỐ!", col1X, textY);
 
         // ========================================================
         // CỘT PHẢI: HỆ THỐNG VẬT PHẨM (ITEMS) & CỔNG
@@ -848,27 +956,55 @@ public class Menu {
 
     // --- LEVEL SELECT ---
     public void handleLevelSelectMouseMove(int mx, int my, GamePanel panel) {
+        hoveredDifficultyIndex = -1;
+        if (difficultyBounds != null) {
+            for (int i = 0; i < difficultyBounds.length; i++) {
+                if (difficultyBounds[i].contains(mx, my)) {
+                    hoveredDifficultyIndex = i;
+                    hoveredLevelIndex = -1;
+                    panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                    return;
+                }
+            }
+        }
+
         hoveredLevelIndex = -1;
-        for (int i = 0; i < levelBounds.length; i++) {
-            if (levelBounds[i].contains(mx, my)) {
-                hoveredLevelIndex = i;
-                panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                return;
+        if (levelBounds != null) {
+            for (int i = 0; i < levelBounds.length; i++) {
+                if (levelBounds[i].contains(mx, my)) {
+                    hoveredLevelIndex = i;
+                    panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                    return;
+                }
             }
         }
         panel.setCursor(Cursor.getDefaultCursor());
     }
 
     public void handleLevelSelectMouseClick(int mx, int my, GamePanel panel) {
-        for (int i = 0; i < levelBounds.length; i++) {
-            if (levelBounds[i].contains(mx, my)) {
-                panel.setCursor(Cursor.getDefaultCursor());
-                if (i == levelOptions.length - 1) {
-                    panel.setState(GameState.MENU);
-                } else {
-                    panel.startLevelFromBeginning(i + 1);
+        // 1. Click chọn độ khó (DỄ / THƯỜNG / KHÓ)
+        if (difficultyBounds != null) {
+            for (int i = 0; i < difficultyBounds.length; i++) {
+                if (difficultyBounds[i].contains(mx, my)) {
+                    selectedDifficulty = Difficulty.values()[i];
+                    panel.setDifficulty(selectedDifficulty);
+                    return;
                 }
-                return;
+            }
+        }
+
+        // 2. Click chọn màn chơi
+        if (levelBounds != null) {
+            for (int i = 0; i < levelBounds.length; i++) {
+                if (levelBounds[i].contains(mx, my)) {
+                    panel.setCursor(Cursor.getDefaultCursor());
+                    if (i == levelOptions.length - 1) {
+                        panel.setState(GameState.MENU);
+                    } else {
+                        panel.startLevelWithDifficulty(i + 1, selectedDifficulty);
+                    }
+                    return;
+                }
             }
         }
     }
@@ -878,11 +1014,19 @@ public class Menu {
         if (code == KeyEvent.VK_ESCAPE) {
             panel.setState(GameState.MENU);
         } else if (code == KeyEvent.VK_1 || code == KeyEvent.VK_NUMPAD1) {
-            panel.startLevelFromBeginning(1);
+            panel.startLevelWithDifficulty(1, selectedDifficulty);
         } else if (code == KeyEvent.VK_2 || code == KeyEvent.VK_NUMPAD2) {
-            panel.startLevelFromBeginning(2);
+            panel.startLevelWithDifficulty(2, selectedDifficulty);
         } else if (code == KeyEvent.VK_3 || code == KeyEvent.VK_NUMPAD3) {
-            panel.startLevelFromBeginning(3);
+            panel.startLevelWithDifficulty(3, selectedDifficulty);
+        } else if (code == KeyEvent.VK_LEFT || code == KeyEvent.VK_A) {
+            int prev = (selectedDifficulty.ordinal() - 1 + Difficulty.values().length) % Difficulty.values().length;
+            selectedDifficulty = Difficulty.values()[prev];
+            panel.setDifficulty(selectedDifficulty);
+        } else if (code == KeyEvent.VK_RIGHT || code == KeyEvent.VK_D) {
+            int next = (selectedDifficulty.ordinal() + 1) % Difficulty.values().length;
+            selectedDifficulty = Difficulty.values()[next];
+            panel.setDifficulty(selectedDifficulty);
         }
     }
 
@@ -1038,5 +1182,13 @@ public class Menu {
 
     public BufferedImage getPlayButtonImage() {
         return playButtonImage;
+    }
+
+    public Difficulty getSelectedDifficulty() {
+        return selectedDifficulty;
+    }
+
+    public void setSelectedDifficulty(Difficulty selectedDifficulty) {
+        this.selectedDifficulty = (selectedDifficulty != null) ? selectedDifficulty : Difficulty.NORMAL;
     }
 }

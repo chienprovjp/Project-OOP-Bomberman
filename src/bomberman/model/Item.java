@@ -1,5 +1,6 @@
 package bomberman.model;
 
+import bomberman.component.Difficulty;
 import bomberman.component.Entity;
 import bomberman.ui.GamePanel;
 import bomberman.util.ResourceLoader;
@@ -87,16 +88,42 @@ public abstract class Item extends Entity {
     }
 
     /**
-     * Tạo ngẫu nhiên một trong các loại Item (Bomb, Flame, Speed, Life).
+     * Tạo ngẫu nhiên một trong các loại Item (Bomb, Flame, Speed, Life) theo độ khó.
      */
+    public static Item createRandomItem(int x, int y, Difficulty diff) {
+        if (diff == Difficulty.HARD) {
+            // Ở chế độ Khó: Tuyệt đối không rơi thêm mạng (chỉ rơi Bom, Lửa, Tốc độ)
+            int r = random.nextInt(3);
+            return switch (r) {
+                case 0 -> new BombItem(x, y);
+                case 1 -> new FlameItem(x, y);
+                default -> new SpeedItem(x, y);
+            };
+        } else if (diff == Difficulty.NORMAL) {
+            // Ở chế độ Thường: Mạng hiếm hơn (~15%)
+            if (random.nextDouble() < 0.15) {
+                return new LifeItem(x, y);
+            }
+            int r = random.nextInt(3);
+            return switch (r) {
+                case 0 -> new BombItem(x, y);
+                case 1 -> new FlameItem(x, y);
+                default -> new SpeedItem(x, y);
+            };
+        } else {
+            // Ở chế độ Dễ: Chia đều 25% cho cả 4 loại
+            int r = random.nextInt(4);
+            return switch (r) {
+                case 0 -> new BombItem(x, y);
+                case 1 -> new FlameItem(x, y);
+                case 2 -> new SpeedItem(x, y);
+                default -> new LifeItem(x, y);
+            };
+        }
+    }
+
     public static Item createRandomItem(int x, int y) {
-        int r = random.nextInt(4);
-        return switch (r) {
-            case 0 -> new BombItem(x, y);
-            case 1 -> new FlameItem(x, y);
-            case 2 -> new SpeedItem(x, y);
-            default -> new LifeItem(x, y);
-        };
+        return createRandomItem(x, y, Difficulty.EASY);
     }
 }
 

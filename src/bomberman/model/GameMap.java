@@ -1,5 +1,6 @@
 package bomberman.model;
 
+import bomberman.component.Difficulty;
 import bomberman.util.ResourceLoader;
 
 import java.awt.Color;
@@ -41,9 +42,9 @@ public class GameMap {
     }
 
     /**
-     * Nạp dữ liệu bản đồ từ file theo màn chơi (Level 1, 2, 3...).
+     * Nạp dữ liệu bản đồ từ file theo màn chơi (Level 1, 2, 3...) và cấu hình độ khó.
      */
-    public void loadLevel(int level) {
+    public void loadLevel(int level, Difficulty diff) {
         int[][] loaded = MapData.loadLevel(level);
         if (loaded != null && loaded.length > 0 && loaded[0].length > 0) {
             this.tiles = loaded;
@@ -52,7 +53,11 @@ public class GameMap {
         } else {
             initDefaultMap();
         }
-        generateHiddenItems();
+        generateHiddenItems(diff != null ? diff : Difficulty.NORMAL);
+    }
+
+    public void loadLevel(int level) {
+        loadLevel(level, Difficulty.NORMAL);
     }
 
     public void initDefaultMap() {
@@ -109,20 +114,20 @@ public class GameMap {
         tiles[1][2] = GRASS;
         tiles[2][1] = GRASS;
 
-        generateHiddenItems();
+        generateHiddenItems(Difficulty.NORMAL);
     }
 
     /**
-     * Khởi tạo các Item giấu dưới gạch (Cơ chế 1: Nổ gạch rơi ra Item).
+     * Khởi tạo các Item giấu dưới gạch theo tỉ lệ của từng độ khó.
      */
-    private void generateHiddenItems() {
+    public void generateHiddenItems(Difficulty diff) {
         hiddenItems = new Item[rows][cols];
+        double dropRate = (diff != null) ? diff.getBrickDropRate() : 0.25;
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 if (tiles[r][c] == BRICK) {
-                    // ~40% cơ hội có Item ẩn giấu dưới gạch
-                    if (Math.random() < 0.40) {
-                        hiddenItems[r][c] = Item.createRandomItem(c * TILE_SIZE, r * TILE_SIZE);
+                    if (Math.random() < dropRate) {
+                        hiddenItems[r][c] = Item.createRandomItem(c * TILE_SIZE, r * TILE_SIZE, diff);
                     }
                 }
             }
