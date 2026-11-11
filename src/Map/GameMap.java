@@ -37,9 +37,19 @@ public class GameMap extends Canvas {
     }
 
     private void loadLevelImages(int level) {
-        grassImage = loadImage("/assets/images/grass" + level + ".png");
-        wallImage = loadImage("/assets/images/wall" + level + ".png");
-        brickImage = loadImage("/assets/images/brick" + level + ".png");
+        if(level >=1 && level <=3){
+            grassImage = loadImage("/assets/images/grass1.png");
+            wallImage = loadImage("/assets/images/wall1.png");
+            brickImage = loadImage("/assets/images/brick1.png");
+        } else if(level >=4 && level <=6){
+            grassImage = loadImage("/assets/images/grass2.png");
+            wallImage = loadImage("/assets/images/wall2.png");
+            brickImage = loadImage("/assets/images/brick2.png");
+        } else if(level >=7 && level <=9){
+            grassImage = loadImage("/assets/images/grass3.png");
+            wallImage = loadImage("/assets/images/wall3.png");
+            brickImage = loadImage("/assets/images/brick3.png");
+        }
     }
 
     private Image loadImage(String path) {

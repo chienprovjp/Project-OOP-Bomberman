@@ -26,9 +26,15 @@ public class LevelSelect extends Screen {
         getRoot().getChildren().add(backgroundImageView);
 
         double[][] levelPositions = {
-            {118, 195},
-            {642, 420},
-            {1106, 279}
+            {160, 198},
+            {159, 528},
+            {505, 389},
+            {640, 210},
+            {790, 350},
+            {740, 550},
+            {1120, 200},
+            {1120, 330},
+            {1120, 520}
         };
 
         for (int i = 1; i <= MapData.LEVEL_COUNT; i++) {

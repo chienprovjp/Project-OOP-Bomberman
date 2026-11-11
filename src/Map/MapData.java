@@ -14,7 +14,7 @@ public class MapData {
     public static final int WALL = 1;
     public static final int BRICK = 2;
 
-    public static final int LEVEL_COUNT = 3;
+    public static final int LEVEL_COUNT = 9;
     private static int[][] map;
     public static int ROWS;
     public static int COLS;
@@ -30,7 +30,6 @@ public class MapData {
                 "Man choi khong hop le: " + level
             );
         }
-
         int[][] selectedMap = loadMap("/src/Map/level" + level + ".txt");
         map = selectedMap;
         ROWS = selectedMap.length;
