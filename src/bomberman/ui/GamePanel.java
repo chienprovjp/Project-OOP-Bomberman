@@ -22,6 +22,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -70,8 +71,8 @@ public class GamePanel extends JPanel {
         this.lives = savedData.getLives();
         this.highScore = savedData.getHighScore();
 
-        setPreferredSize(
-                new Dimension(GameMap.DEFAULT_COLS * GameMap.TILE_SIZE, GameMap.DEFAULT_ROWS * GameMap.TILE_SIZE));
+        // Chuẩn độ phân giải HD 1280x720 khớp tỷ lệ 16:9 với hình nền Bản đồ Overworld
+        setPreferredSize(new Dimension(1280, 720));
         setBackground(Color.BLACK);
         setFocusable(true);
 
@@ -431,27 +432,37 @@ public class GamePanel extends JPanel {
     }
 
     /**
-     * Sinh ngẫu nhiên kẻ địch tại các vị trí cỏ an toàn cách xa điểm xuất phát.
+     * Sinh ngẫu nhiên kẻ địch tại các vị trí cỏ an toàn, phân bổ đều khắp bản đồ
+     * và luôn cách xa điểm xuất phát của người chơi ít nhất 4 ô.
      */
     private void spawnEnemies(int count) {
         enemies.clear();
-        int spawned = 0;
         int mapRows = map.getRows();
         int mapCols = map.getCols();
 
-        for (int r = mapRows - 2; r >= 1 && spawned < count; r--) {
-            for (int c = mapCols - 2; c >= 1 && spawned < count; c--) {
+        List<java.awt.Point> validSpots = new ArrayList<>();
+        for (int r = 1; r < mapRows - 1; r++) {
+            for (int c = 1; c < mapCols - 1; c++) {
                 if (map.getTile(r, c) == GameMap.GRASS) {
                     int distFromSpawn = Math.abs(r - 1) + Math.abs(c - 1);
                     if (distFromSpawn >= 4) {
-                        int enemySize = 44;
-                        int spawnX = c * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - enemySize) / 2;
-                        int spawnY = r * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - enemySize) / 2;
-                        enemies.add(new Ballom(spawnX, spawnY));
-                        spawned++;
+                        validSpots.add(new java.awt.Point(c, r));
                     }
                 }
             }
+        }
+
+        // Xáo trộn ngẫu nhiên để quái vật rải đều khắp các góc bản đồ
+        java.util.Collections.shuffle(validSpots, new java.util.Random());
+
+        int spawned = 0;
+        int enemySize = 44;
+        for (java.awt.Point pt : validSpots) {
+            if (spawned >= count) break;
+            int spawnX = pt.x * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - enemySize) / 2;
+            int spawnY = pt.y * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - enemySize) / 2;
+            enemies.add(new Ballom(spawnX, spawnY));
+            spawned++;
         }
     }
 
@@ -570,15 +581,36 @@ public class GamePanel extends JPanel {
                 menu.drawLevelSelect(g, width, height);
             }
             case PLAYING, PAUSED, GAME_OVER, VICTORY -> {
-                // Tự động căn giữa bản đồ nếu kích thước bản đồ nhỏ hơn cửa sổ
-                int offsetX = Math.max(0, (width - map.getWidthInPixels()) / 2);
-                int offsetY = Math.max(0, (height - map.getHeightInPixels()) / 2);
+                // Tự động căn giữa và co dãn linh hoạt (Auto-fit Viewport) để toàn bộ 9 màn chơi
+                // (kể cả các màn kích thước lớn 17x17 như Màn 3, 7, 8, 9) luôn hiển thị 100% trọn vẹn
+                // trong khung nhìn phía dưới HUD, không bao giờ bị cắt hay lọt quái ra ngoài.
+                int hudHeight = 44;
+                int availW = width - 24;
+                int availH = height - hudHeight - 16;
+
+                int mapW = map.getWidthInPixels();
+                int mapH = map.getHeightInPixels();
+
+                double scale = 1.0;
+                if (mapW > availW || mapH > availH) {
+                    scale = Math.min((double) availW / mapW, (double) availH / mapH);
+                }
+
+                int drawW = (int) (mapW * scale);
+                int drawH = (int) (mapH * scale);
+                int offsetX = (width - drawW) / 2;
+                int offsetY = hudHeight + (availH - drawH) / 2;
 
                 g.setColor(new Color(15, 23, 42));
                 g.fillRect(0, 0, width, height);
 
                 Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
                 g2d.translate(offsetX, offsetY);
+                if (scale != 1.0) {
+                    g2d.scale(scale, scale);
+                }
 
                 // 1. Vẽ bản đồ (cỏ, tường đá, gạch)
                 map.draw(g2d);
