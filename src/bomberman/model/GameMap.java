@@ -71,6 +71,7 @@ public class GameMap {
             this.tiles = loaded;
             this.rows = loaded.length;
             this.cols = loaded[0].length;
+            if (rows > 1 && cols > 1) this.tiles[1][1] = GRASS;
         } else {
             initDefaultMap();
         }

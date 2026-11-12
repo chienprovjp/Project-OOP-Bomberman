@@ -360,6 +360,7 @@ public class GamePanel extends JPanel {
         SaveManager.saveProgress(chosenLevel, 0, this.lives, highScore, true);
         this.state = GameState.PLAYING;
         setCursor(Cursor.getDefaultCursor());
+        requestFocusInWindow();
     }
 
     /**
@@ -379,6 +380,7 @@ public class GamePanel extends JPanel {
         spawnEnemies(2 + chosenLevel);
         this.state = GameState.PLAYING;
         setCursor(Cursor.getDefaultCursor());
+        requestFocusInWindow();
     }
 
     /**
@@ -706,6 +708,7 @@ public class GamePanel extends JPanel {
     public void resumeGame() {
         this.state = GameState.PLAYING;
         setCursor(Cursor.getDefaultCursor());
+        requestFocusInWindow();
     }
 
     public void returnToMenu() {

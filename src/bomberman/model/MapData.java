@@ -99,13 +99,15 @@ public class MapData {
 
     /**
      * Đảm bảo khu vực xuất phát của Player (hàng 1 cột 1) và các ô kề cạnh
-     * luôn là cỏ trống (GRASS) để Player không bị kẹt trong gạch.
+     * luôn là cỏ trống (GRASS) để Player không bị kẹt trong gạch hoặc cột đá (WALL).
      */
     private static int[][] sanitizeSpawn(int[][] map) {
-        if (map.length > 2 && map[0].length > 2) {
-            if (map[1][1] == BRICK) map[1][1] = GRASS;
-            if (map[1][2] == BRICK) map[1][2] = GRASS;
-            if (map[2][1] == BRICK) map[2][1] = GRASS;
+        if (map != null && map.length > 2 && map[0].length > 2) {
+            map[1][1] = GRASS;
+            map[1][2] = GRASS;
+            map[2][1] = GRASS;
+            if (map[0].length > 1) map[0][1] = GRASS;
+            if (map.length > 1) map[1][0] = GRASS;
         }
         return map;
     }
