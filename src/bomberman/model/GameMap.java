@@ -36,15 +36,36 @@ public class GameMap {
     }
 
     private void loadImages() {
-        grassImage = ResourceLoader.loadImage("grass.png");
-        wallImage  = ResourceLoader.loadImage("wall.png");
-        brickImage = ResourceLoader.loadImage("brick.png");
+        loadThemeForLevel(1);
+    }
+
+    /**
+     * Nạp theme địa hình (Cỏ, Tường, Gạch) theo từng cụm màn chơi (1-3: Rừng, 4-6: Đồ chơi, 7-9: Núi lửa).
+     */
+    public void loadThemeForLevel(int level) {
+        int theme = 1;
+        if (level >= 1 && level <= 3) {
+            theme = 1;
+        } else if (level >= 4 && level <= 6) {
+            theme = 2;
+        } else if (level >= 7 && level <= 9) {
+            theme = 3;
+        }
+
+        BufferedImage gImg = ResourceLoader.loadImage("grass" + theme + ".png");
+        BufferedImage wImg = ResourceLoader.loadImage("wall" + theme + ".png");
+        BufferedImage bImg = ResourceLoader.loadImage("brick" + theme + ".png");
+
+        this.grassImage = (gImg != null) ? gImg : ResourceLoader.loadImage("grass.png");
+        this.wallImage  = (wImg != null) ? wImg : ResourceLoader.loadImage("wall.png");
+        this.brickImage = (bImg != null) ? bImg : ResourceLoader.loadImage("brick.png");
     }
 
     /**
      * Nạp dữ liệu bản đồ từ file theo màn chơi (Level 1, 2, 3...) và cấu hình độ khó.
      */
     public void loadLevel(int level, Difficulty diff) {
+        loadThemeForLevel(level);
         int[][] loaded = MapData.loadLevel(level);
         if (loaded != null && loaded.length > 0 && loaded[0].length > 0) {
             this.tiles = loaded;

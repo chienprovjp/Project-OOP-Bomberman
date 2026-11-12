@@ -19,7 +19,7 @@ public class MapData {
     public static final int WALL  = 1;
     public static final int BRICK = 2;
 
-    public static final int LEVEL_COUNT = 3;
+    public static final int LEVEL_COUNT = 9;
 
     /**
      * Nạp dữ liệu bản đồ theo số thứ tự màn chơi (1 -> LEVEL_COUNT).
