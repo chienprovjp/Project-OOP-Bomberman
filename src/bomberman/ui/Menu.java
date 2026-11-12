@@ -39,17 +39,17 @@ public class Menu {
     private Rectangle[] difficultyBounds;
     private int hoveredDifficultyIndex = -1;
 
-    // Tọa độ chuẩn 9 màn chơi trên ảnh nền 1280x720 (tác giả: nguyentaianquoc06-ctrl)
+    // Tọa độ chuẩn 9 màn chơi bám sát các bệ đá tròn trên con đường bản đồ (canvas chuẩn 1280x720)
     private static final double[][] LEVEL_COORDINATES = {
-        { 160.0 / 1280.0, 198.0 / 720.0 }, // Màn 1: Rừng Xanh (Bên trái)
-        { 159.0 / 1280.0, 528.0 / 720.0 }, // Màn 2: Rừng Xanh (Bên trái)
-        { 505.0 / 1280.0, 389.0 / 720.0 }, // Màn 3: Rừng Xanh (Giữa chuyển giao)
-        { 640.0 / 1280.0, 210.0 / 720.0 }, // Màn 4: Khu Đồ Chơi & Ống Nước
-        { 790.0 / 1280.0, 350.0 / 720.0 }, // Màn 5: Khu Đồ Chơi & Ống Nước
-        { 740.0 / 1280.0, 550.0 / 720.0 }, // Màn 6: Khu Đồ Chơi & Ống Nước
-        { 1120.0 / 1280.0, 200.0 / 720.0 }, // Màn 7: Núi Lửa Dung Nham
-        { 1120.0 / 1280.0, 330.0 / 720.0 }, // Màn 8: Núi Lửa Dung Nham
-        { 1120.0 / 1280.0, 520.0 / 720.0 }  // Màn 9: Núi Lửa Dung Nham
+        { 115.0 / 1280.0, 260.0 / 720.0 }, // Màn 1: Cứ điểm bệ đá đường trên Rừng Xanh
+        { 110.0 / 1280.0, 540.0 / 720.0 }, // Màn 2: Cứ điểm khúc cua đường dưới Rừng Xanh
+        { 445.0 / 1280.0, 465.0 / 720.0 }, // Màn 3: Cứ điểm bệ đá đường dốc Rừng Xanh
+        { 590.0 / 1280.0, 325.0 / 720.0 }, // Màn 4: Cứ điểm cổng ranh giới sang Khu Đồ Chơi
+        { 790.0 / 1280.0, 255.0 / 720.0 }, // Màn 5: Cứ điểm đỉnh vòm Khu Đồ Chơi
+        { 805.0 / 1280.0, 595.0 / 720.0 }, // Màn 6: Cứ điểm cổng dưới Khu Đồ Chơi
+        { 1160.0 / 1280.0, 260.0 / 720.0 },// Màn 7: Cứ điểm đường nhập cảnh Núi Lửa
+        { 1205.0 / 1280.0, 345.0 / 720.0 },// Màn 8: Cứ điểm bờ hồ dung nham Núi Lửa
+        { 1040.0 / 1280.0, 490.0 / 720.0 } // Màn 9: Cứ điểm lòng chảo hạ lưu Núi Lửa
     };
 
     private Rectangle[] levelNodeBounds = new Rectangle[9];
