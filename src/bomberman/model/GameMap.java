@@ -160,6 +160,11 @@ public class GameMap {
      * Kiểm tra vị trí (x, y) có va chạm với tường tĩnh, gạch hoặc mép bản đồ hay không.
      */
     public boolean checkCollision(int x, int y, int width, int height) {
+        // 1. Kiểm tra trực tiếp tọa độ pixel để không bao giờ bị lọt ra ngoài mép bản đồ do lỗi chia số nguyên
+        if (x < 0 || y < 0 || x + width > cols * TILE_SIZE || y + height > rows * TILE_SIZE) {
+            return true;
+        }
+
         int leftCol   = x / TILE_SIZE;
         int rightCol  = (x + width - 1) / TILE_SIZE;
         int topRow    = y / TILE_SIZE;

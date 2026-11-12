@@ -47,7 +47,7 @@ public class MapData {
             if (f.exists() && f.isFile()) {
                 try (BufferedReader reader = new BufferedReader(new FileReader(f, StandardCharsets.UTF_8))) {
                     int[][] map = parseMapFromReader(reader);
-                    if (map != null) return sanitizeSpawn(map);
+                    if (map != null) return sanitizeSpawn(ensureBorderWalls(map));
                 } catch (Exception e) {
                     System.err.println("[MapData] Lỗi đọc file " + p + ": " + e.getMessage());
                 }
@@ -66,7 +66,7 @@ public class MapData {
             if (is != null) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
                     int[][] map = parseMapFromReader(reader);
-                    if (map != null) return sanitizeSpawn(map);
+                    if (map != null) return sanitizeSpawn(ensureBorderWalls(map));
                 } catch (Exception e) {
                     System.err.println("[MapData] Lỗi đọc resource " + rPath + ": " + e.getMessage());
                 }
@@ -98,6 +98,54 @@ public class MapData {
     }
 
     /**
+     * Đảm bảo bản đồ luôn có một lớp tường đá (WALL) bao bọc kín 4 phía.
+     * Nếu file cấu hình map của tác giả chưa có tường bao quanh, tự động bọc thêm viền tường
+     * chuẩn classic Bomberman để quái vật, bom nổ và người chơi không bao giờ bị lọt ra ngoài.
+     */
+    private static int[][] ensureBorderWalls(int[][] rawMap) {
+        if (rawMap == null || rawMap.length < 3 || rawMap[0].length < 3) return rawMap;
+
+        int rawRows = rawMap.length;
+        int rawCols = rawMap[0].length;
+
+        // Kiểm tra xem viền ngoài đã là toàn tường đá (WALL) hay chưa
+        boolean hasTopBorder = true;
+        boolean hasBottomBorder = true;
+        for (int c = 0; c < rawCols; c++) {
+            if (rawMap[0][c] != WALL) hasTopBorder = false;
+            if (rawMap[rawRows - 1][c] != WALL) hasBottomBorder = false;
+        }
+
+        boolean hasLeftBorder = true;
+        boolean hasRightBorder = true;
+        for (int r = 0; r < rawRows; r++) {
+            if (rawMap[r][0] != WALL) hasLeftBorder = false;
+            if (rawMap[r][rawCols - 1] != WALL) hasRightBorder = false;
+        }
+
+        if (hasTopBorder && hasBottomBorder && hasLeftBorder && hasRightBorder) {
+            return rawMap; // Đã có viền tường bao quanh
+        }
+
+        // Tạo bản đồ mới có thêm 1 lớp tường bao quanh chuẩn Bomberman
+        int newRows = rawRows + 2;
+        int newCols = rawCols + 2;
+        int[][] borderedMap = new int[newRows][newCols];
+
+        for (int r = 0; r < newRows; r++) {
+            for (int c = 0; c < newCols; c++) {
+                if (r == 0 || r == newRows - 1 || c == 0 || c == newCols - 1) {
+                    borderedMap[r][c] = WALL;
+                } else {
+                    borderedMap[r][c] = rawMap[r - 1][c - 1];
+                }
+            }
+        }
+
+        return borderedMap;
+    }
+
+    /**
      * Đảm bảo khu vực xuất phát của Player (hàng 1 cột 1) và các ô kề cạnh
      * luôn là cỏ trống (GRASS) để Player không bị kẹt trong gạch hoặc cột đá (WALL).
      */
@@ -106,8 +154,6 @@ public class MapData {
             map[1][1] = GRASS;
             map[1][2] = GRASS;
             map[2][1] = GRASS;
-            if (map[0].length > 1) map[0][1] = GRASS;
-            if (map.length > 1) map[1][0] = GRASS;
         }
         return map;
     }
