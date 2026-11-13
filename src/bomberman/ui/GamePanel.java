@@ -66,9 +66,9 @@ public class GamePanel extends JPanel {
 
         // Đọc tiến trình và kỷ lục cũ từ ổ cứng lên
         GameSaveData savedData = SaveManager.loadProgress();
-        this.level = savedData.getLevel();
-        this.score = savedData.getScore();
-        this.lives = savedData.getLives();
+        this.level = Math.max(1, savedData.getLevel());
+        this.score = Math.max(0, savedData.getScore());
+        this.lives = (savedData.getLives() > 0) ? savedData.getLives() : this.difficulty.getInitialLives();
         this.highScore = savedData.getHighScore();
 
         // Chuẩn độ phân giải HD 1280x720 khớp tỷ lệ 16:9 với hình nền Bản đồ Overworld
@@ -250,12 +250,14 @@ public class GamePanel extends JPanel {
      * Xử lý khi Player trúng lửa hoặc chạm phải kẻ địch.
      */
     private void handlePlayerDamage() {
-        lives--;
-        invulnerableTimer = 90; // ~1.5 giây bất tử nhấp nháy
+        if (state != GameState.PLAYING)
+            return;
 
+        lives = Math.max(0, lives - 1);
         if (lives <= 0) {
             triggerGameOver();
         } else {
+            invulnerableTimer = 90; // ~1.5 giây bất tử nhấp nháy
             player.reset(getPlayerSpawnX(), getPlayerSpawnY());
         }
     }
@@ -265,8 +267,9 @@ public class GamePanel extends JPanel {
      */
     public void triggerGameOver() {
         player.stopMoving();
+        this.lives = 0;
         // Hết mạng -> lưu điểm kỷ lục, kết thúc ván chơi dở dang (ongoing = false)
-        SaveManager.saveProgress(1, 0, 3, highScore, false);
+        SaveManager.saveProgress(1, 0, this.difficulty.getInitialLives(), highScore, false);
         this.state = GameState.GAME_OVER;
         setCursor(Cursor.getDefaultCursor());
     }
@@ -365,9 +368,12 @@ public class GamePanel extends JPanel {
     }
 
     /**
-     * Bắt đầu màn chơi được chọn (giữ nguyên điểm và mạng hiện có)
+     * Bắt đầu màn chơi được chọn (giữ nguyên điểm và mạng hiện có, đảm bảo mạng > 0)
      */
     public void startLevel(int chosenLevel) {
+        if (this.lives <= 0) {
+            this.lives = this.difficulty.getInitialLives();
+        }
         this.level = chosenLevel;
         map.loadLevel(chosenLevel, this.difficulty);
         bombs.clear();
@@ -418,10 +424,20 @@ public class GamePanel extends JPanel {
     }
 
     /**
-     * Chơi lại màn hiện tại
+     * Chơi lại màn hiện tại: Hồi phục đầy đủ số mạng theo độ khó,
+     * đặt lại chỉ số trang bị (bom, bán kính, tốc độ), và reset điểm nếu từ Game Over.
      */
     public void restartCurrentLevel() {
+        this.lives = this.difficulty.getInitialLives();
+        if (state == GameState.GAME_OVER) {
+            this.score = 0;
+        }
+        this.maxBombs = 1;
+        this.bombRadius = 1;
+        this.player.resetSpeed();
+        setNotification("CHƠI LẠI MÀN " + this.level + ": HỒI PHỤC " + this.lives + " MẠNG!");
         startLevel(this.level);
+        SaveManager.saveProgress(this.level, this.score, this.lives, highScore, true);
     }
 
     /**
@@ -752,8 +768,16 @@ public class GamePanel extends JPanel {
         lastEnemyX = -1;
         lastEnemyY = -1;
         notificationTimer = 0;
-        // Thoát ra menu khi chưa xong ván -> lưu lại tiến trình dở dang
-        SaveManager.saveProgress(level, score, lives, highScore, true);
+
+        // Chỉ lưu tiến trình dở dang nếu người chơi đang trong ván thực sự (PLAYING hoặc PAUSED)
+        if (state == GameState.PLAYING || state == GameState.PAUSED) {
+            SaveManager.saveProgress(level, score, Math.max(1, lives), highScore, true);
+        } else if (state == GameState.GAME_OVER) {
+            this.lives = this.difficulty.getInitialLives();
+            this.score = 0;
+            SaveManager.saveProgress(1, 0, this.lives, highScore, false);
+        }
+
         this.state = GameState.MENU;
         setCursor(Cursor.getDefaultCursor());
     }
@@ -764,7 +788,7 @@ public class GamePanel extends JPanel {
     public void onWindowClosing() {
         if (state == GameState.PLAYING || state == GameState.PAUSED) {
             player.stopMoving();
-            SaveManager.saveProgress(level, score, lives, highScore, true);
+            SaveManager.saveProgress(level, score, Math.max(1, lives), highScore, true);
             System.out.println("[GamePanel] Đã tự động lưu ván chơi dở dang trước khi thoát.");
         }
     }

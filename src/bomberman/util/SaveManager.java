@@ -60,16 +60,22 @@ public class SaveManager {
                     String valStr = parts[1].trim();
 
                     switch (key) {
-                        case "level" -> level = Integer.parseInt(valStr);
-                        case "score" -> score = Integer.parseInt(valStr);
+                        case "level" -> level = Math.max(1, Integer.parseInt(valStr));
+                        case "score" -> score = Math.max(0, Integer.parseInt(valStr));
                         case "lives" -> lives = Integer.parseInt(valStr);
-                        case "highScore" -> highScore = Integer.parseInt(valStr);
+                        case "highScore" -> highScore = Math.max(0, Integer.parseInt(valStr));
                         case "hasOngoingGame" -> hasOngoingGame = Boolean.parseBoolean(valStr);
                     }
                 }
             }
         } catch (Exception e) {
             System.err.println("[SaveManager] Lỗi khi đọc file lưu: " + e.getMessage());
+        }
+
+        // Tự động bảo vệ: Nếu số mạng <= 0 thì reset về 3 và hủy cờ ván dở dang
+        if (lives <= 0) {
+            lives = 3;
+            hasOngoingGame = false;
         }
 
         return new GameSaveData(level, score, lives, highScore, hasOngoingGame);
