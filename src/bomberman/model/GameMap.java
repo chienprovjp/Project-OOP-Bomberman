@@ -19,6 +19,7 @@ public class GameMap {
     public static final int GRASS = 0; // Cỏ - có thể đi qua
     public static final int WALL  = 1; // Tường cố định - không đi qua được, không phá được
     public static final int BRICK = 2; // Tường gạch - không đi qua được, có thể phá hủy
+    public static final int BARRIER = 4; // Rào cản - không đi qua được, không phá được
 
     private int rows = DEFAULT_ROWS;
     private int cols = DEFAULT_COLS;
@@ -29,6 +30,7 @@ public class GameMap {
     private BufferedImage grassImage;
     private BufferedImage wallImage;
     private BufferedImage brickImage;
+    private BufferedImage barrierImage;
 
     public GameMap() {
         loadImages();
@@ -40,7 +42,7 @@ public class GameMap {
     }
 
     /**
-     * Nạp theme địa hình (Cỏ, Tường, Gạch) theo từng cụm màn chơi (1-3: Rừng, 4-6: Đồ chơi, 7-9: Núi lửa).
+     * Nạp theme địa hình (Cỏ, Tường, Gạch,Rào cản) theo từng cụm màn chơi (1-3: Rừng, 4-6: Đồ chơi, 7-9: Núi lửa).
      */
     public void loadThemeForLevel(int level) {
         int theme = 1;
@@ -55,10 +57,11 @@ public class GameMap {
         BufferedImage gImg = ResourceLoader.loadImage("grass" + theme + ".png");
         BufferedImage wImg = ResourceLoader.loadImage("wall" + theme + ".png");
         BufferedImage bImg = ResourceLoader.loadImage("brick" + theme + ".png");
-
+        BufferedImage bImg2 = ResourceLoader.loadImage("barrier" + theme + ".png");
         this.grassImage = (gImg != null) ? gImg : ResourceLoader.loadImage("grass.png");
         this.wallImage  = (wImg != null) ? wImg : ResourceLoader.loadImage("wall.png");
         this.brickImage = (bImg != null) ? bImg : ResourceLoader.loadImage("brick.png");
+        this.barrierImage = (bImg2 != null) ? bImg2 : ResourceLoader.loadImage("barrier.png");
     }
 
     /**
@@ -157,7 +160,7 @@ public class GameMap {
     }
 
     /**
-     * Kiểm tra vị trí (x, y) có va chạm với tường tĩnh, gạch hoặc mép bản đồ hay không.
+     * Kiểm tra vị trí (x, y) có va chạm với tường tĩnh, gạch hoặc rào cản hay không.
      */
     public boolean checkCollision(int x, int y, int width, int height) {
         // 1. Kiểm tra trực tiếp tọa độ pixel để không bao giờ bị lọt ra ngoài mép bản đồ do lỗi chia số nguyên
@@ -178,7 +181,7 @@ public class GameMap {
         // Kiểm tra các ô nhân vật đang chiếm chỗ
         for (int row = topRow; row <= bottomRow; row++) {
             for (int col = leftCol; col <= rightCol; col++) {
-                if (tiles[row][col] == WALL || tiles[row][col] == BRICK) {
+                if (tiles[row][col] == WALL || tiles[row][col] == BRICK || tiles[row][col] == BARRIER) {
                     return true;
                 }
             }
@@ -240,6 +243,17 @@ public class GameMap {
                         g.setColor(new Color(210, 105, 30));
                         g.fillRect(pixelX, pixelY, TILE_SIZE, TILE_SIZE);
                         g.setColor(new Color(139, 69, 19));
+                        g.drawRect(pixelX, pixelY, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+                // 4. Vẽ rào cản (BARRIER)
+                else if (tiles[row][col] == BARRIER) {
+                    if (barrierImage != null) {
+                        g.drawImage(barrierImage, pixelX, pixelY, TILE_SIZE, TILE_SIZE, null);
+                    } else {
+                        g.setColor(new Color(100, 100, 100));
+                        g.fillRect(pixelX, pixelY, TILE_SIZE, TILE_SIZE);
+                        g.setColor(new Color(50, 50, 50));
                         g.drawRect(pixelX, pixelY, TILE_SIZE, TILE_SIZE);
                     }
                 }

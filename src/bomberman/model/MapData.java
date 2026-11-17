@@ -18,6 +18,7 @@ public class MapData {
     public static final int GRASS = 0;
     public static final int WALL  = 1;
     public static final int BRICK = 2;
+    public static final int BARRIER = 4;
 
     public static final int LEVEL_COUNT = 9;
 
