@@ -24,6 +24,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -35,6 +36,11 @@ import java.util.Iterator;
 import java.util.List;
 
 public class GamePanel extends JPanel {
+    private static final int FREEZE_DURATION_TICKS = 30;
+    private static final double FREEZE_CHANCE = 0.05;
+    private static final double FIRE_CHANCE = 0.1;
+    private static final int FIRE_ACTIVE_TICKS = 10;
+
     private GameMap map;
     private final MapEffect mapEffect = new MapEffect();
     private Player player;
@@ -47,6 +53,8 @@ public class GamePanel extends JPanel {
     private int highScore = 0;
     private Difficulty difficulty = Difficulty.NORMAL;
     private final BufferedImage lifeIcon = ResourceLoader.loadImage("life.png");
+    private final BufferedImage frozenPlayerImage = ResourceLoader.loadImage("player_frozen.png");
+    private final BufferedImage lavaEruptionImage = ResourceLoader.loadImage("lava_eruption.png");
 
     // Danh sách bom, vụ nổ, kẻ địch và vật phẩm
     private List<Bomb> bombs = new ArrayList<>();
@@ -60,6 +68,11 @@ public class GamePanel extends JPanel {
     private int maxBombs = 1; // Số lượng bom tối đa đặt cùng lúc
     private int bombRadius = 1; // Bán kính nổ (1 ô)
     private int invulnerableTimer = 0; // Bộ đếm thời gian bất tử sau khi hồi sinh
+    private int freezeTimer = 0;
+    private int fireTileCol = -1;
+    private int fireTileRow = -1;
+    private int fireActiveTimer = 0;
+    private boolean fireHitPlayer = false;
     private String notificationText = ""; // Thông báo khi nhặt được item
     private int notificationTimer = 0;
 
@@ -100,11 +113,33 @@ public class GamePanel extends JPanel {
             return;
 
         mapEffect.updateParticles(map.getWidthInPixels(), map.getHeightInPixels());
-        player.move(map, bombs);
+        if (freezeTimer > 0) {
+            freezeTimer--;
+        } else {
+            int previousCol = (player.getX() + player.getWidth() / 2) / GameMap.TILE_SIZE;
+            int previousRow = (player.getY() + player.getHeight() / 2) / GameMap.TILE_SIZE;
+            player.move(map, bombs);
+
+            int currentCol = (player.getX() + player.getWidth() / 2) / GameMap.TILE_SIZE;
+            int currentRow = (player.getY() + player.getHeight() / 2) / GameMap.TILE_SIZE;
+            boolean enteredGrass = (currentCol != previousCol || currentRow != previousRow)
+                    && map.getTile(currentRow, currentCol) == GameMap.GRASS;
+            if (level >= 4 && level <= 6 && enteredGrass && Math.random() < FREEZE_CHANCE) {
+                freezeTimer = FREEZE_DURATION_TICKS;
+                setNotification("BẠN ĐÃ BỊ ĐÓNG BĂNG!");
+            }
+            if (isVolcanoLevel() && enteredGrass && Math.random() < FIRE_CHANCE) {
+                fireTileCol = currentCol;
+                fireTileRow = currentRow;
+                fireActiveTimer = FIRE_ACTIVE_TICKS;
+                fireHitPlayer = false;
+            }
+        }
 
         if (invulnerableTimer > 0) {
             invulnerableTimer--;
         }
+        updateFireHazard();
 
         // 1. Cập nhật danh sách Bom
         Iterator<Bomb> bombIt = bombs.iterator();
@@ -259,6 +294,7 @@ public class GamePanel extends JPanel {
         if (state != GameState.PLAYING)
             return;
 
+        freezeTimer = 0;
         lives = Math.max(0, lives - 1);
         if (lives <= 0) {
             triggerGameOver();
@@ -436,6 +472,68 @@ public class GamePanel extends JPanel {
     private void resetMapEffect() {
         mapEffect.loadThemeForLevel(level);
         mapEffect.initializeParticles(map.getWidthInPixels(), map.getHeightInPixels());
+        freezeTimer = 0;
+        fireTileCol = -1;
+        fireTileRow = -1;
+        fireActiveTimer = 0;
+        fireHitPlayer = false;
+    }
+
+    private boolean isVolcanoLevel() {
+        return level >= 7 && level <= 9;
+    }
+
+    private void updateFireHazard() {
+        if (!isVolcanoLevel()) {
+            fireTileCol = -1;
+            fireTileRow = -1;
+            fireActiveTimer = 0;
+            fireHitPlayer = false;
+            return;
+        }
+
+        if (fireActiveTimer <= 0) {
+            fireTileCol = -1;
+            fireTileRow = -1;
+            fireHitPlayer = false;
+            return;
+        }
+
+        Rectangle fireBounds = new Rectangle(
+                fireTileCol * GameMap.TILE_SIZE,
+                fireTileRow * GameMap.TILE_SIZE,
+                GameMap.TILE_SIZE,
+                GameMap.TILE_SIZE);
+        if (!fireHitPlayer && invulnerableTimer <= 0 && fireBounds.intersects(player.getBounds())) {
+            fireHitPlayer = true;
+            handleLavaDamage();
+        }
+
+        fireActiveTimer--;
+    }
+
+    private void handleLavaDamage() {
+        if (state != GameState.PLAYING)
+            return;
+
+        lives = Math.max(0, lives - 1);
+        if (lives <= 0) {
+            triggerGameOver();
+        } else {
+            invulnerableTimer = 90;
+        }
+    }
+
+    private void drawFireHazard(Graphics2D g2d) {
+        if (fireActiveTimer <= 0 || fireTileCol < 0 || fireTileRow < 0 || lavaEruptionImage == null) {
+            return;
+        }
+
+        int x = fireTileCol * GameMap.TILE_SIZE;
+        int y = fireTileRow * GameMap.TILE_SIZE;
+        int fireHeight = GameMap.TILE_SIZE * 3 / 2;
+        g2d.drawImage(lavaEruptionImage, x, y - fireHeight + GameMap.TILE_SIZE,
+                GameMap.TILE_SIZE, fireHeight, null);
     }
 
     /**
@@ -645,6 +743,7 @@ public class GamePanel extends JPanel {
 
                 // 1. Vẽ bản đồ (cỏ, tường đá, gạch)
                 map.draw(g2d);
+                drawFireHazard(g2d);
 
                 // 1.5. Vẽ Cổng qua màn nếu đã mở (nằm trên cỏ, dưới chân người chơi)
                 if (portal != null) {
@@ -674,7 +773,12 @@ public class GamePanel extends JPanel {
                 // 6. Vẽ Player (nhấp nháy khi bất tử)
                 if (state != GameState.GAME_OVER) {
                     if (invulnerableTimer == 0 || (invulnerableTimer / 5) % 2 == 0) {
-                        player.draw(g2d);
+                        if (freezeTimer > 0 && frozenPlayerImage != null) {
+                            g2d.drawImage(frozenPlayerImage, player.getX(), player.getY(),
+                                    player.getWidth(), player.getHeight(), null);
+                        } else {
+                            player.draw(g2d);
+                        }
                     }
                 }
                 // 7. Vẽ hiệu ứng hạt (Particles) trên cùng, tạo cảm giác mưa hoặc bụi bay
