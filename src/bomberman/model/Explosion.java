@@ -72,8 +72,8 @@ public class Explosion extends Entity {
                 int r = centerRow + dy * step;
                 int tile = map.getTile(r, c);
 
-                if (tile == GameMap.WALL) {
-                    break; // Bị tường đá chặn
+                if (tile == GameMap.WALL || tile == GameMap.BARRIER) {
+                    break; // Bị tường đá hoặc rào cản chặn
                 } else if (tile == GameMap.BRICK) {
                     Item dropped = map.destroyBrick(r, c); // Phá gạch (Cơ chế 1: Rơi Item)
                     if (dropped != null && items != null) {

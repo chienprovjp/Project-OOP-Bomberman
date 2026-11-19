@@ -1,5 +1,7 @@
 package bomberman.model;
 
+import bomberman.ai.MoveStrategy;
+import bomberman.ai.RandomStrategy;
 import bomberman.component.Entity;
 
 import java.awt.AlphaComposite;
@@ -9,11 +11,16 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 /**
  * Lớp trừu tượng định nghĩa các thuộc tính và hành vi chung của Kẻ địch (Enemy).
+ * Tích hợp cả:
+ * 1. Hệ thống hoạt ảnh chết (chớp sáng + tan biến thành hạt linh hồn).
+ * 2. Strategy Pattern (MoveStrategy: Random / BFS / A*) và di chuyển căn tim đường dùng chung.
  */
 public abstract class Enemy extends Entity {
     protected int speed = 2;
@@ -23,6 +30,9 @@ public abstract class Enemy extends Entity {
     protected int deathAnimationTick = 0;
     protected static final int DEATH_ANIM_DURATION = 24; // ~0.4 giây diễn hoạt khi chết
     protected int scoreReward = 100;
+    protected boolean canPassBrick = false;
+    protected int turnCooldown = 0;
+    protected MoveStrategy moveStrategy = new RandomStrategy();
     protected static final Random random = new Random();
 
     public Enemy(int startX, int startY, int width, int height, int speed) {
@@ -34,9 +44,9 @@ public abstract class Enemy extends Entity {
     // Từng loại quái vật con sẽ tự cài đặt logic di chuyển riêng
     public abstract void move(GameMap map, List<Bomb> bombs);
 
-    // Nạp chồng hỗ trợ truyền Player (phục vụ quái rượt đuổi Oneal)
+    // Nạp chồng hỗ trợ truyền Player (phục vụ AI BFS / A*)
     public void move(GameMap map, List<Bomb> bombs, Player player) {
-        move(map, bombs);
+        moveAlongGrid(map, bombs, player);
     }
 
     @Override
@@ -46,7 +56,155 @@ public abstract class Enemy extends Entity {
             if (deathAnimationTick >= DEATH_ANIM_DURATION) {
                 deathFinished = true;
             }
+            return;
         }
+        if (turnCooldown > 0) {
+            turnCooldown--;
+        }
+    }
+
+    public MoveStrategy getMoveStrategy() {
+        return moveStrategy;
+    }
+
+    public void setMoveStrategy(MoveStrategy moveStrategy) {
+        if (moveStrategy != null) {
+            this.moveStrategy = moveStrategy;
+        }
+    }
+
+    public boolean canPassBrick() {
+        return canPassBrick;
+    }
+
+    /**
+     * Cơ chế di chuyển bám tim đường kết hợp MoveStrategy (Random / BFS / A*).
+     * Khi ở đúng tâm ô gạch và hết cooldown, quái sẽ hỏi chiến lược AI để chọn hướng tối ưu.
+     */
+    protected void moveAlongGrid(GameMap map, List<Bomb> bombs, Player target) {
+        if (!alive) return;
+
+        int tileSize = GameMap.TILE_SIZE;
+
+        if (turnCooldown == 0 && isAtTileCenter(tileSize) && moveStrategy != null) {
+            Player.Direction aiDir = moveStrategy.chooseDirection(this, map, bombs, target);
+            if (aiDir != null && canMoveInDirection(aiDir, map, bombs)) {
+                if (aiDir != this.direction) {
+                    this.direction = aiDir;
+                    snapAxisToTileCenter(aiDir, tileSize);
+                    this.turnCooldown = 14;
+                } else {
+                    this.turnCooldown = 10;
+                }
+            }
+        }
+
+        boolean moved = stepCurrentDirection(map, bombs, tileSize);
+        if (!moved) {
+            Player.Direction aiDir = (moveStrategy != null) ? moveStrategy.chooseDirection(this, map, bombs, target) : null;
+            if (aiDir != null && canMoveInDirection(aiDir, map, bombs)) {
+                this.direction = aiDir;
+                snapAxisToTileCenter(aiDir, tileSize);
+                this.turnCooldown = 14;
+            } else {
+                tryPickAvailableDirection(map, bombs);
+            }
+        }
+    }
+
+    protected boolean stepCurrentDirection(GameMap map, List<Bomb> bombs, int tileSize) {
+        if (direction == Player.Direction.UP || direction == Player.Direction.DOWN) {
+            x = alignToCenter(x, width, tileSize, speed);
+            int dy = (direction == Player.Direction.UP) ? -speed : speed;
+            if (!checkTileObstacle(x, y + dy, map, bombs)) {
+                y += dy;
+                return true;
+            }
+        } else {
+            y = alignToCenter(y, height, tileSize, speed);
+            int dx = (direction == Player.Direction.LEFT) ? -speed : speed;
+            if (!checkTileObstacle(x + dx, y, map, bombs)) {
+                x += dx;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean checkTileObstacle(int targetX, int targetY, GameMap map, List<Bomb> bombs) {
+        if (checkBombCollision(targetX, targetY, bombs)) {
+            return true;
+        }
+        return canPassBrick
+                ? map.checkWallCollision(targetX, targetY, width, height)
+                : map.checkCollision(targetX, targetY, width, height);
+    }
+
+    protected boolean isAtTileCenter(int tileSize) {
+        if (direction == Player.Direction.UP || direction == Player.Direction.DOWN) {
+            int row = (y + height / 2) / tileSize;
+            int targetY = row * tileSize + (tileSize - height) / 2;
+            return Math.abs(y - targetY) <= speed;
+        } else {
+            int col = (x + width / 2) / tileSize;
+            int targetX = col * tileSize + (tileSize - width) / 2;
+            return Math.abs(x - targetX) <= speed;
+        }
+    }
+
+    protected boolean canMoveInDirection(Player.Direction dir, GameMap map, List<Bomb> bombs) {
+        int tileSize = GameMap.TILE_SIZE;
+        int testDx = 0;
+        int testDy = 0;
+        switch (dir) {
+            case UP    -> testDy = -speed;
+            case DOWN  -> testDy = speed;
+            case LEFT  -> testDx = -speed;
+            case RIGHT -> testDx = speed;
+        }
+
+        int testX = x;
+        int testY = y;
+        if (dir == Player.Direction.UP || dir == Player.Direction.DOWN) {
+            int col = (x + width / 2) / tileSize;
+            testX = col * tileSize + (tileSize - width) / 2;
+        } else {
+            int row = (y + height / 2) / tileSize;
+            testY = row * tileSize + (tileSize - height) / 2;
+        }
+        return !checkTileObstacle(testX + testDx, testY + testDy, map, bombs);
+    }
+
+    protected void snapAxisToTileCenter(Player.Direction dir, int tileSize) {
+        if (dir == Player.Direction.UP || dir == Player.Direction.DOWN) {
+            int col = (x + width / 2) / tileSize;
+            this.x = col * tileSize + (tileSize - width) / 2;
+        } else {
+            int row = (y + height / 2) / tileSize;
+            this.y = row * tileSize + (tileSize - height) / 2;
+        }
+    }
+
+    protected void tryPickAvailableDirection(GameMap map, List<Bomb> bombs) {
+        List<Player.Direction> candidates = new ArrayList<>();
+        for (Player.Direction dir : Player.Direction.values()) {
+            if (dir != this.direction && canMoveInDirection(dir, map, bombs)) {
+                candidates.add(dir);
+            }
+        }
+        if (!candidates.isEmpty()) {
+            Collections.shuffle(candidates);
+            this.direction = candidates.get(0);
+            snapAxisToTileCenter(this.direction, GameMap.TILE_SIZE);
+        } else {
+            this.direction = switch (this.direction) {
+                case UP    -> Player.Direction.DOWN;
+                case DOWN  -> Player.Direction.UP;
+                case LEFT  -> Player.Direction.RIGHT;
+                case RIGHT -> Player.Direction.LEFT;
+            };
+        }
+        this.turnCooldown = 16;
     }
 
     // Đổi sang một hướng ngẫu nhiên
