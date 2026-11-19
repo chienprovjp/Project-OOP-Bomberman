@@ -186,6 +186,31 @@ public class GameMap {
         return false;
     }
 
+    // Kiểm tra va chạm với Tường cứng (WALL), cho phép đi xuyên gạch (BRICK)
+    public boolean checkWallCollision(int x, int y, int width, int height) {
+        if (x < 0 || y < 0 || x + width > cols * TILE_SIZE || y + height > rows * TILE_SIZE) {
+            return true;
+        }
+
+        int leftCol   = x / TILE_SIZE;
+        int rightCol  = (x + width - 1) / TILE_SIZE;
+        int topRow    = y / TILE_SIZE;
+        int bottomRow = (y + height - 1) / TILE_SIZE;
+
+        if (leftCol < 0 || rightCol >= cols || topRow < 0 || bottomRow >= rows) {
+            return true;
+        }
+
+        for (int row = topRow; row <= bottomRow; row++) {
+            for (int col = leftCol; col <= rightCol; col++) {
+                if (tiles[row][col] == WALL) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /**
      * Phá hủy tường gạch tại vị trí hàng và cột.
      * Trả về Item ẩn bên dưới nếu có (Cơ chế 1: Nổ gạch rơi ra Item).

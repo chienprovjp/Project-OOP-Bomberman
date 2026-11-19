@@ -8,6 +8,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
@@ -117,6 +118,8 @@ public class Explosion extends Entity {
     @Override
     public void draw(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         int tileSize = GameMap.TILE_SIZE;
 
         // Vụ nổ 3 giai đoạn: Nở bung (0-6) -> Cháy đỉnh điểm (7-19) -> Tàn lụi & khói (20-30)

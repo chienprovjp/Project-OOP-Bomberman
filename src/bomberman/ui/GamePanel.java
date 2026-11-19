@@ -7,8 +7,10 @@ import bomberman.model.Bomb;
 import bomberman.model.Enemy;
 import bomberman.model.Explosion;
 import bomberman.model.GameMap;
+import bomberman.model.Ghost;
 import bomberman.model.Item;
 import bomberman.model.MapData;
+import bomberman.model.Oneal;
 import bomberman.model.Player;
 import bomberman.model.Portal;
 import bomberman.util.GameSaveData;
@@ -94,6 +96,7 @@ public class GamePanel extends JPanel {
         if (state != GameState.PLAYING)
             return;
 
+        player.update();
         player.move(map, bombs);
 
         if (invulnerableTimer > 0) {
@@ -169,14 +172,14 @@ public class GamePanel extends JPanel {
             Enemy enemy = enemyIt.next();
             enemy.update();
             if (enemy.isAlive()) {
-                enemy.move(map, bombs);
+                enemy.move(map, bombs, player);
                 // Kẻ địch chạm vào Player
                 if (invulnerableTimer <= 0 && enemy.intersects(player)) {
                     handlePlayerDamage();
                     if (state != GameState.PLAYING)
                         return;
                 }
-            } else {
+            } else if (enemy.isDeathFinished()) {
                 enemyIt.remove();
             }
         }
@@ -244,6 +247,7 @@ public class GamePanel extends JPanel {
         }
 
         bombs.add(new Bomb(pCol, pRow, bombRadius));
+        player.triggerPlaceBombAnimation();
     }
 
     /**
@@ -477,7 +481,27 @@ public class GamePanel extends JPanel {
             if (spawned >= count) break;
             int spawnX = pt.x * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - enemySize) / 2;
             int spawnY = pt.y * GameMap.TILE_SIZE + (GameMap.TILE_SIZE - enemySize) / 2;
-            enemies.add(new Ballom(spawnX, spawnY));
+
+            // Phân bổ quái theo Màn và Độ khó: Màn 1 (Ballom), Màn 2-3 (thêm Oneal), Màn 4+ (thêm Ghost)
+            if (level >= 4 || (level >= 3 && difficulty == Difficulty.HARD)) {
+                int mod = spawned % 3;
+                if (mod == 0) {
+                    enemies.add(new Ballom(spawnX, spawnY));
+                } else if (mod == 1) {
+                    enemies.add(new Oneal(spawnX, spawnY));
+                } else {
+                    enemies.add(new Ghost(spawnX, spawnY));
+                }
+            } else if (level >= 3 || (level == 2 && difficulty == Difficulty.HARD)) {
+                if (spawned % 2 == 1) {
+                    enemies.add(new Oneal(spawnX, spawnY));
+                } else {
+                    enemies.add(new Ballom(spawnX, spawnY));
+                }
+            } else {
+                enemies.add(new Ballom(spawnX, spawnY));
+            }
+
             spawned++;
         }
     }
